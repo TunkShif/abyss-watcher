@@ -1,18 +1,36 @@
+import { createCookieSessionStorage, type SessionStorage } from "react-router";
+import type { CookieSessionData, LoginResult, LogoutResult, ValidateResult } from "~/lib/modules/auth/models";
 import type { NotifyService } from "~/lib/modules/notify";
 import type { UserId } from "~/lib/modules/onebot/models";
+import type { SessionService } from "~/lib/modules/session";
 import type { UserService } from "~/lib/modules/user";
-import { minutes } from "~/lib/utils/cache";
+import { days, minutes } from "~/lib/utils/cache";
 
 // TODO: error handling & rate limiting
 export class AuthService {
   #kv: KVNamespace;
   #userService: UserService;
+  #sessionService: SessionService;
   #notifyService: NotifyService;
 
-  constructor(kv: KVNamespace, userService: UserService, notifyService: NotifyService) {
+  #cookieSessionStorage: SessionStorage<CookieSessionData>;
+
+  constructor(kv: KVNamespace, userService: UserService, sessionService: SessionService, notifyService: NotifyService) {
     this.#kv = kv;
     this.#userService = userService;
+    this.#sessionService = sessionService;
     this.#notifyService = notifyService;
+
+    this.#cookieSessionStorage = createCookieSessionStorage({
+      cookie: {
+        name: "abyss_session",
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: days(14),
+        secure: true,
+      },
+    });
   }
 
   async request(userId: UserId) {
@@ -29,7 +47,39 @@ export class AuthService {
     await this.#notifyService.sendAuthRequestMessage(userId, code);
   }
 
-  async verify(userId: UserId, code: string): Promise<boolean> {
+  async login(request: Request, userId: UserId, code: string): Promise<LoginResult> {
+    const session = await this.#cookieSessionStorage.getSession(request.headers.get("Cookie"));
+
+    const success = await this.#verify(userId, code);
+    if (!success) {
+      const cookie = await this.#cookieSessionStorage.commitSession(session);
+      return { success, cookie };
+    }
+
+    const { token } = await this.#sessionService.create(userId);
+    session.set("token", token);
+    const cookie = await this.#cookieSessionStorage.commitSession(session);
+    return { success, cookie };
+  }
+
+  async logout(request: Request): Promise<LogoutResult> {
+    const session = await this.#cookieSessionStorage.getSession(request.headers.get("Cookie"));
+    const cookie = await this.#cookieSessionStorage.destroySession(session);
+    return { cookie };
+  }
+
+  async validate(request: Request): Promise<ValidateResult> {
+    const session = await this.#cookieSessionStorage.getSession(request.headers.get("Cookie"));
+    const validateToken = session.get("token");
+    if (!validateToken) return { user: null, cookie: await this.#cookieSessionStorage.commitSession(session) };
+    const maybeSession = await this.#sessionService.validate(validateToken);
+    if (!maybeSession) return { user: null, cookie: await this.#cookieSessionStorage.destroySession(session) };
+    const { user, token } = maybeSession;
+    session.set("token", token);
+    return { user, cookie: await this.#cookieSessionStorage.commitSession(session) };
+  }
+
+  async #verify(userId: UserId, code: string): Promise<boolean> {
     const storedHash = await this.#kv.get(`auth:code:${userId}`);
     if (!storedHash) return false;
 

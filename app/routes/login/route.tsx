@@ -1,6 +1,6 @@
 import { ArrowRight, Lock, Shield, Zap } from "lucide-react";
 import type { PropsWithChildren } from "react";
-import { Form, href, redirect, useActionData, useNavigation } from "react-router";
+import { data, Form, href, redirect, useActionData, useNavigation } from "react-router";
 import { title } from "~/lib/utils/meta";
 import { parseFormData } from "~/lib/utils/validation";
 import { FormSchema } from "~/routes/login/schema";
@@ -20,15 +20,22 @@ export async function action({ request, context: { app } }: Route.ActionArgs) {
       success: true,
     };
   } else if (form.intent === "verify") {
-    const success = await app.services.authService.verify(form.userId, form.code);
+    const { success, cookie } = await app.services.authService.login(request, form.userId, form.code);
     if (success) {
-      return redirect(href("/dashboard"));
+      return redirect(href("/dashboard"), {
+        headers: { "Set-Cookie": cookie },
+      });
     } else {
-      return {
-        step: "request",
-        userId: form.userId,
-        success: false,
-      };
+      return data(
+        {
+          step: "request",
+          userId: form.userId,
+          success: false,
+        },
+        {
+          headers: { "Set-Cookie": cookie },
+        },
+      );
     }
   }
 }

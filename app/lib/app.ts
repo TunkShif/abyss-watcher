@@ -6,9 +6,8 @@ import { UserService } from "~/lib/modules/user";
 
 export interface AbyssApp {
   services: {
-    userService: UserService;
     authService: AuthService;
-    sessionService: SessionService;
+    userService: UserService;
   };
 }
 
@@ -18,14 +17,13 @@ export const createAbyssApp = (env: Env): AbyssApp => {
   const notifyService = new NotifyService(bot);
 
   const userService = new UserService(env.KV, bot);
-  const authService = new AuthService(env.KV, userService, notifyService);
   const sessionService = new SessionService(env.KV, userService);
+  const authService = new AuthService(env.KV, userService, sessionService, notifyService);
 
   return {
     services: {
-      userService,
       authService,
-      sessionService,
+      userService,
     },
   };
 };
