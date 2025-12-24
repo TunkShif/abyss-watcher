@@ -1,20 +1,22 @@
 import { up } from "up-fetch";
 import type { AnyMessage } from "~/lib/modules/onebot/message";
 import {
+  GetFriendListResponseSchema,
   GetGroupListResponseSchema,
   GetGroupMemberInfoResponseSchema,
   GetGroupMemberListResponseSchema,
   type Group,
-  type GroupId,
   type GroupMemberInfo,
   SendPrivateMessageResponseSchema,
+  type User,
   type UserId,
 } from "~/lib/modules/onebot/models";
 
 export interface OneBotClient {
   getGroupList(nextToken?: string): Promise<Group[]>;
-  getGroupMemberList(groupId: GroupId, noCache?: boolean): Promise<GroupMemberInfo[]>;
-  getGroupMemberInfo(groupId: GroupId, userId: UserId, noCache?: boolean): Promise<GroupMemberInfo | null>;
+  getFriendList(noCache?: boolean): Promise<User[]>;
+  getGroupMemberList(groupId: string | number, noCache?: boolean): Promise<GroupMemberInfo[]>;
+  getGroupMemberInfo(groupId: string | number, userId: UserId, noCache?: boolean): Promise<GroupMemberInfo | null>;
   sendPrivateMessage(userId: UserId, message: AnyMessage[]): Promise<void>;
 }
 
@@ -33,6 +35,15 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
         method: "POST",
         body: { next_token: nextToken },
         schema: GetGroupListResponseSchema,
+      });
+      return response.data ?? [];
+    },
+
+    async getFriendList(noCache = false) {
+      const response = await upfetch("/get_friend_list", {
+        method: "POST",
+        body: { no_cache: noCache },
+        schema: GetFriendListResponseSchema,
       });
       return response.data ?? [];
     },

@@ -62,12 +62,27 @@ export const GroupMemberInfoSchema = v.object({
 
 export type GroupMemberInfo = v.InferOutput<typeof GroupMemberInfoSchema>;
 
+export const UserSchema = v.object({
+  user_id: v.number(),
+  nickname: v.string(),
+  sex: v.enum(UserSex),
+});
+
+export type User = v.InferOutput<typeof UserSchema>;
+
 export const GetGroupListResponseSchema = v.object({
   ...ResponseSchema.entries,
   data: v.nullable(v.array(GroupSchema)),
 });
 
 export type GetGroupListResponse = v.InferOutput<typeof GetGroupListResponseSchema>;
+
+export const GetFriendListResponseSchema = v.object({
+  ...ResponseSchema.entries,
+  data: v.nullable(v.array(UserSchema)),
+});
+
+export type GetFriendListResponse = v.InferOutput<typeof GetFriendListResponseSchema>;
 
 export const GetGroupMemberListResponseSchema = v.object({
   ...ResponseSchema.entries,

@@ -11,7 +11,8 @@
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
-    "lineWidth": 120
+    "lineWidth": 120,
+    "includes": ["./app/**", "./workers/**"]
   },
   "linter": {
     "enabled": true,
@@ -22,6 +23,11 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "double"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "assist": {
