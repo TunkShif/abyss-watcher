@@ -6,7 +6,7 @@ export class UserService {
   #bot: OneBotClient;
   #kv: KVNamespace;
 
-  constructor(bot: OneBotClient, kv: KVNamespace) {
+  constructor(kv: KVNamespace, bot: OneBotClient) {
     this.#bot = bot;
     this.#kv = kv;
   }

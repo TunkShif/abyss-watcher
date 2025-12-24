@@ -1,5 +1,13 @@
 import * as v from "valibot";
 
-export const SearchParamsSchema = v.object({
-  step: v.optional(v.union([v.literal("input"), v.literal("verify")]), "input"),
-});
+export const FormSchema = v.variant("intent", [
+  v.object({
+    intent: v.literal("request"),
+    userId: v.string(),
+  }),
+  v.object({
+    intent: v.literal("verify"),
+    userId: v.string(),
+    code: v.pipe(v.string(), v.length(12)),
+  }),
+]);

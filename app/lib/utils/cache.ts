@@ -14,7 +14,6 @@ interface CachedOptions {
   noCache: boolean;
 }
 
-
 /**
  * Converts minutes to seconds.
  * @param n - Number of minutes.
@@ -36,13 +35,12 @@ export const hours = (n: number) => n * minutes(60);
  */
 export const days = (n: number) => n * hours(24);
 
-
 /**
  * Wraps a function with caching logic using Cloudflare KV.
- * 
+ *
  * If a value is found in the cache and `noCache` is false, it returns the cached value.
  * Otherwise, it executes the function, stores the result in KV, and returns it.
- * 
+ *
  * @template T - The type of the value being cached.
  * @param fn - The asynchronous function to execute if the cache is missed.
  * @param options - Configuration for the cache behavior.
@@ -63,4 +61,3 @@ export const cached = async <T>(
   });
   return value;
 };
-
