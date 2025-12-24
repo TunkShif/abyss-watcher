@@ -2,14 +2,23 @@
 
 @theme {
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
     "Noto Color Emoji";
+  --font-mono: "JetBrains Mono Variable", monospace;
+
+  --color-abyss-950: #020617;
+  --color-abyss-900: #0f172a;
+  --color-abyss-800: #1e293b;
+  --color-abyss-700: #334155;
+  --color-abyss-600: #475569;
+  --color-neon-blue: #0ea5e9;
+  --color-neon-purple: #8b5cf6;
+  --color-neon-cyan: #06b6d4;
+  --color-neon-green: #10b981;
 }
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
-
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
   }

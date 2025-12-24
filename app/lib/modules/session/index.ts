@@ -1,23 +1,22 @@
 import { sha256 } from "@oslojs/crypto/sha2";
 import { encodeBase64url, encodeHexLowerCase } from "@oslojs/encoding";
-import { eq } from "drizzle-orm";
 import * as v from "valibot";
-import type { Database } from "~/lib/database";
 import type { UserId } from "~/lib/modules/onebot/models";
 import { type SessionData, SessionDataSchema } from "~/lib/modules/session/models";
+import type { UserService } from "~/lib/modules/user";
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export class SessionService {
-  #db: Database;
   #kv: KVNamespace;
+  #userService: UserService;
 
   private static SESSION_MAX_AGE = 14 * DAY_IN_MS;
   private static SESSION_RENEW_BEFORE_DAYS = 3;
 
-  constructor(env: Env, db: Database) {
-    this.#kv = env.KV;
-    this.#db = db;
+  constructor(kv: KVNamespace, userService: UserService) {
+    this.#kv = kv;
+    this.#userService = userService;
   }
 
   async create(userId: UserId) {
@@ -38,7 +37,7 @@ export class SessionService {
 
     const sessionData = v.parse(SessionDataSchema, JSON.parse(value));
     const { userId, expiresAt } = sessionData;
-    const user = await this.#db.select().from(users).where(eq(users.id, userId)).get();
+    const user = await this.#userService.find(userId);
     if (user == null) return null;
 
     if (this.#shouldRenewSession(expiresAt)) {

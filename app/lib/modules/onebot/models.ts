@@ -21,7 +21,7 @@ export enum GroupMemberRole {
   Member = "member",
 }
 
-const ResponseSchema = v.object({
+export const ResponseSchema = v.object({
   status: v.literal("ok"),
   retcode: v.number(),
   message: v.string(),
@@ -29,6 +29,8 @@ const ResponseSchema = v.object({
   echo: v.optional(v.string()),
   stream: v.union([v.literal("stream-action"), v.literal("normal-action")]),
 });
+
+export type Response = v.InferOutput<typeof ResponseSchema>;
 
 export const GroupSchema = v.object({
   group_all_shut: v.enum(Bool),
@@ -97,9 +99,3 @@ export const GetGroupMemberInfoResponseSchema = v.object({
 });
 
 export type GetGroupMemberInfoResponse = v.InferOutput<typeof GetGroupMemberInfoResponseSchema>;
-
-export const SendPrivateMessageResponseSchema = v.object({
-  ...ResponseSchema.entries,
-});
-
-export type SendPrivateMessageResponse = v.InferOutput<typeof SendPrivateMessageResponseSchema>;

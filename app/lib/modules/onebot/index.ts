@@ -6,8 +6,9 @@ import {
   GetGroupMemberInfoResponseSchema,
   GetGroupMemberListResponseSchema,
   type Group,
+  type GroupId,
   type GroupMemberInfo,
-  SendPrivateMessageResponseSchema,
+  ResponseSchema,
   type User,
   type UserId,
 } from "~/lib/modules/onebot/models";
@@ -18,6 +19,7 @@ export interface OneBotClient {
   getGroupMemberList(groupId: string | number, noCache?: boolean): Promise<GroupMemberInfo[]>;
   getGroupMemberInfo(groupId: string | number, userId: UserId, noCache?: boolean): Promise<GroupMemberInfo | null>;
   sendPrivateMessage(userId: UserId, message: AnyMessage[]): Promise<void>;
+  sendGroupMessage(groupId: GroupId, message: AnyMessage[]): Promise<void>;
 }
 
 // TODO: error handling & logging
@@ -80,7 +82,18 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
           user_id: userId,
           message,
         },
-        schema: SendPrivateMessageResponseSchema,
+        schema: ResponseSchema,
+      });
+    },
+
+    async sendGroupMessage(groupId, message) {
+      await upfetch("/send_group_msg", {
+        method: "POST",
+        body: {
+          group_id: groupId,
+          message,
+        },
+        schema: ResponseSchema,
       });
     },
   };
