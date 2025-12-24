@@ -1,36 +1,45 @@
 {
-	"name": "abyss-watcher",
-	"private": true,
-	"type": "module",
-	"scripts": {
-		"build": "react-router build",
-		"cf-typegen": "wrangler types",
-		"deploy": "pnpm run build && wrangler deploy",
-		"dev": "react-router dev",
-		"postinstall": "npm run cf-typegen",
-		"preview": "pnpm run build && vite preview",
-		"typecheck": "npm run cf-typegen && react-router typegen && tsc -b"
-	},
-	"dependencies": {
-		"isbot": "^5.1.31",
-		"react": "^19.1.1",
-		"react-dom": "^19.1.1",
-		"react-router": "^7.10.0",
-		"up-fetch": "^2.5.0",
-		"valibot": "^1.2.0"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.3.10",
-		"@cloudflare/vite-plugin": "^1.13.5",
-		"@react-router/dev": "^7.10.0",
-		"@tailwindcss/vite": "^4.1.13",
-		"@types/node": "^22",
-		"@types/react": "^19.1.13",
-		"@types/react-dom": "^19.1.9",
-		"tailwindcss": "^4.1.13",
-		"typescript": "^5.9.2",
-		"vite": "^7.1.7",
-		"vite-tsconfig-paths": "^5.1.4",
-		"wrangler": "^4.56.0"
-	}
+  "name": "abyss-watcher",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "react-router build",
+    "cf-typegen": "wrangler types",
+    "deploy": "pnpm run build && wrangler deploy",
+    "dev": "react-router dev",
+    "preview": "pnpm run build && vite preview",
+    "typecheck": "npm run cf-typegen && react-router typegen && tsc -b",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "postinstall": "npm run cf-typegen"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.1",
+    "isbot": "^5.1.31",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router": "^7.10.0",
+    "up-fetch": "^2.5.0",
+    "valibot": "^1.2.0",
+    "@oslojs/crypto": "^1.0.1",
+    "@oslojs/encoding": "^1.1.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.10",
+    "@cloudflare/vite-plugin": "^1.13.5",
+    "@react-router/dev": "^7.10.0",
+    "@tailwindcss/vite": "^4.1.13",
+    "@types/node": "^22",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.8",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vite-tsconfig-paths": "^5.1.4",
+    "wrangler": "^4.56.0"
+  }
 }

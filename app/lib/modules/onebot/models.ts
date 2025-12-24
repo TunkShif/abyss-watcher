@@ -1,5 +1,9 @@
 import * as v from "valibot";
 
+type Id = string | number;
+export type UserId = Id;
+export type GroupId = Id;
+
 export enum Bool {
   F = 0,
   T = 1,
@@ -78,3 +82,9 @@ export const GetGroupMemberInfoResponseSchema = v.object({
 });
 
 export type GetGroupMemberInfoResponse = v.InferOutput<typeof GetGroupMemberInfoResponseSchema>;
+
+export const SendPrivateMessageResponseSchema = v.object({
+  ...ResponseSchema.entries,
+});
+
+export type SendPrivateMessageResponse = v.InferOutput<typeof SendPrivateMessageResponseSchema>;

@@ -1,0 +1,5 @@
+DATABASE_URL="file:local.db"
+
+STEAM_WEBAPI_TOKEN="abcdefg"
+ONEBOT_BASE_URL="http://example.com"
+ONEBOT_TOKEN="abcdefg"

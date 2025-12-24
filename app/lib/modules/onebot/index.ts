@@ -1,20 +1,21 @@
 import { up } from "up-fetch";
+import type { AnyMessage } from "~/lib/modules/onebot/message";
 import {
   GetGroupListResponseSchema,
   GetGroupMemberInfoResponseSchema,
   GetGroupMemberListResponseSchema,
   type Group,
+  type GroupId,
   type GroupMemberInfo,
+  SendPrivateMessageResponseSchema,
+  type UserId,
 } from "~/lib/modules/onebot/models";
 
 export interface OneBotClient {
   getGroupList(nextToken?: string): Promise<Group[]>;
-  getGroupMemberList(groupId: string | number, noCache?: boolean): Promise<GroupMemberInfo[]>;
-  getGroupMemberInfo(
-    groupId: string | number,
-    userId: string | number,
-    noCache?: boolean,
-  ): Promise<GroupMemberInfo | null>;
+  getGroupMemberList(groupId: GroupId, noCache?: boolean): Promise<GroupMemberInfo[]>;
+  getGroupMemberInfo(groupId: GroupId, userId: UserId, noCache?: boolean): Promise<GroupMemberInfo | null>;
+  sendPrivateMessage(userId: UserId, message: AnyMessage[]): Promise<void>;
 }
 
 // TODO: error handling & logging
@@ -59,6 +60,17 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
         schema: GetGroupMemberInfoResponseSchema,
       });
       return response.data;
+    },
+
+    async sendPrivateMessage(userId, message) {
+      await upfetch("/send_private_msg", {
+        method: "POST",
+        body: {
+          user_id: userId,
+          message,
+        },
+        schema: SendPrivateMessageResponseSchema,
+      });
     },
   };
 };
