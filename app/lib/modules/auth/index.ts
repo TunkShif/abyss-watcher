@@ -1,4 +1,5 @@
 import { createCookieSessionStorage, type SessionStorage } from "react-router";
+import type { Logger } from "~/lib/logger";
 import type { CookieSessionData, LoginResult, LogoutResult, ValidateResult } from "~/lib/modules/auth/models";
 import type { NotifyService } from "~/lib/modules/notify";
 import type { UserId } from "~/lib/modules/onebot/models";
@@ -12,14 +13,23 @@ export class AuthService {
   #userService: UserService;
   #sessionService: SessionService;
   #notifyService: NotifyService;
+  #logger: Logger;
 
   #cookieSessionStorage: SessionStorage<CookieSessionData>;
 
-  constructor(kv: KVNamespace, userService: UserService, sessionService: SessionService, notifyService: NotifyService) {
+  constructor(
+    kv: KVNamespace,
+    userService: UserService,
+    sessionService: SessionService,
+    notifyService: NotifyService,
+    secret: string,
+    logger: Logger,
+  ) {
     this.#kv = kv;
     this.#userService = userService;
     this.#sessionService = sessionService;
     this.#notifyService = notifyService;
+    this.#logger = logger.child({ module: "service.auth" });
 
     this.#cookieSessionStorage = createCookieSessionStorage({
       cookie: {
@@ -29,13 +39,18 @@ export class AuthService {
         sameSite: "lax",
         maxAge: days(14),
         secure: true,
+        secrets: [secret],
       },
     });
   }
 
   async request(userId: UserId) {
+    this.#logger.info({ userId }, "requesting auth code");
     const user = await this.#userService.find(userId);
-    if (!user) throw new Error(`unknown user ${userId}`);
+    if (!user) {
+      this.#logger.warn({ userId }, "unknown user requested auth");
+      throw new Error(`unknown user ${userId}`);
+    }
 
     const code = this.#generateCode();
     const hash = await this.#hashCode(code);
@@ -48,10 +63,12 @@ export class AuthService {
   }
 
   async login(request: Request, userId: UserId, code: string): Promise<LoginResult> {
+    this.#logger.info({ userId }, "attempting login");
     const session = await this.#cookieSessionStorage.getSession(request.headers.get("Cookie"));
 
     const success = await this.#verify(userId, code);
     if (!success) {
+      this.#logger.warn({ userId }, "login failed: invalid code");
       const cookie = await this.#cookieSessionStorage.commitSession(session);
       return { success, cookie };
     }
@@ -59,11 +76,17 @@ export class AuthService {
     const { token } = await this.#sessionService.create(userId);
     session.set("token", token);
     const cookie = await this.#cookieSessionStorage.commitSession(session);
+    this.#logger.info({ userId }, "login successful");
     return { success, cookie };
   }
 
   async logout(request: Request): Promise<LogoutResult> {
     const session = await this.#cookieSessionStorage.getSession(request.headers.get("Cookie"));
+    const token = session.get("token");
+    if (token) {
+      this.#logger.info("logging out");
+      await this.#sessionService.delete(token);
+    }
     const cookie = await this.#cookieSessionStorage.destroySession(session);
     return { cookie };
   }
@@ -72,8 +95,13 @@ export class AuthService {
     const session = await this.#cookieSessionStorage.getSession(request.headers.get("Cookie"));
     const validateToken = session.get("token");
     if (!validateToken) return { user: null, cookie: await this.#cookieSessionStorage.commitSession(session) };
+
     const maybeSession = await this.#sessionService.validate(validateToken);
-    if (!maybeSession) return { user: null, cookie: await this.#cookieSessionStorage.destroySession(session) };
+    if (!maybeSession) {
+      this.#logger.warn("session validation failed: invalid token");
+      return { user: null, cookie: await this.#cookieSessionStorage.destroySession(session) };
+    }
+
     const { user, token } = maybeSession;
     session.set("token", token);
     return { user, cookie: await this.#cookieSessionStorage.commitSession(session) };

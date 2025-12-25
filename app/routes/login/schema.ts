@@ -8,6 +8,6 @@ export const FormSchema = v.variant("intent", [
   v.object({
     intent: v.literal("verify"),
     userId: v.string(),
-    code: v.pipe(v.string(), v.length(12)),
+    code: v.pipe(v.string(), v.length(14)),
   }),
 ]);

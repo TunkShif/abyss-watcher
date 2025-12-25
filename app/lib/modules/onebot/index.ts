@@ -1,4 +1,5 @@
 import { up } from "up-fetch";
+import type { Logger } from "~/lib/logger";
 import type { AnyMessage } from "~/lib/modules/onebot/message";
 import {
   GetFriendListResponseSchema,
@@ -22,8 +23,9 @@ export interface OneBotClient {
   sendGroupMessage(groupId: GroupId, message: AnyMessage[]): Promise<void>;
 }
 
-// TODO: error handling & logging
-export const createOneBotClient = (baseUrl: string, token: string): OneBotClient => {
+// TODO: error handling
+export const createOneBotClient = (baseUrl: string, token: string, logger: Logger): OneBotClient => {
+  const log = logger.child({ module: "client.onebot" });
   const upfetch = up(fetch, () => ({
     baseUrl,
     headers: {
@@ -33,6 +35,7 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
 
   return {
     async getGroupList(nextToken) {
+      log.debug({ nextToken }, "fetching group list");
       const response = await upfetch("/get_group_list", {
         method: "POST",
         body: { next_token: nextToken },
@@ -42,6 +45,7 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
     },
 
     async getFriendList(noCache = false) {
+      log.debug({ noCache }, "fetching friend list");
       const response = await upfetch("/get_friend_list", {
         method: "POST",
         body: { no_cache: noCache },
@@ -51,6 +55,7 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
     },
 
     async getGroupMemberList(groupId, noCache = false) {
+      log.debug({ groupId, noCache }, "fetching group member list");
       const response = await upfetch("/get_group_member_list", {
         method: "POST",
         body: {
@@ -63,6 +68,7 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
     },
 
     async getGroupMemberInfo(groupId, userId, noCache = false) {
+      log.debug({ groupId, userId, noCache }, "fetching group member info");
       const response = await upfetch("/get_group_member_info", {
         method: "POST",
         body: {
@@ -76,6 +82,7 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
     },
 
     async sendPrivateMessage(userId, message) {
+      log.info({ userId }, "sending private message");
       await upfetch("/send_private_msg", {
         method: "POST",
         body: {
@@ -87,6 +94,7 @@ export const createOneBotClient = (baseUrl: string, token: string): OneBotClient
     },
 
     async sendGroupMessage(groupId, message) {
+      log.info({ groupId }, "sending group message");
       await upfetch("/send_group_msg", {
         method: "POST",
         body: {

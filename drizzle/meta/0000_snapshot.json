@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "510c616e-0eab-4bf9-b1c9-7a111990a2df",
+  "id": "c8629104-389f-4aef-9492-46643762de75",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "groups_users": {
@@ -10,15 +10,15 @@
         "user_id": {
           "name": "user_id",
           "type": "text",
-          "primaryKey": true,
-          "notNull": true,
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "group_id": {
           "name": "group_id",
           "type": "text",
-          "primaryKey": true,
-          "notNull": true,
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "createdAt": {
@@ -32,7 +32,15 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "groups_users_user_id_group_id_pk": {
+          "columns": [
+            "user_id",
+            "group_id"
+          ],
+          "name": "groups_users_user_id_group_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -42,21 +50,37 @@
         "user_id": {
           "name": "user_id",
           "type": "text",
-          "primaryKey": true,
-          "notNull": true,
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "player_id": {
           "name": "player_id",
           "type": "text",
-          "primaryKey": true,
-          "notNull": true,
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "players_users_user_id_player_id_pk": {
+          "columns": [
+            "user_id",
+            "player_id"
+          ],
+          "name": "players_users_user_id_player_id_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     }

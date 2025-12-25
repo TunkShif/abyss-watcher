@@ -7,7 +7,7 @@
   "name": "abyss-watcher",
   "compatibility_date": "2025-04-04",
   "main": "./workers/app.ts",
-  "vars": {},
+  "vars": { },
   "observability": {
     "enabled": true
   },
@@ -16,7 +16,7 @@
       "binding": "DB",
       "database_name": "prod-abyss-watcher",
       "database_id": "8042a04d-3a89-4976-b4a9-df847bca17cf",
-      "migrations_dir": "drizzle"
+      "migrations_dir": "./drizzle"
     }
   ],
   "kv_namespaces": [
