@@ -1,6 +1,6 @@
+import type { OneBotClient } from "~/lib/clients/onebot";
+import type { User, UserId } from "~/lib/clients/onebot/models";
 import type { Logger } from "~/lib/logger";
-import type { OneBotClient } from "~/lib/modules/onebot";
-import type { User, UserId } from "~/lib/modules/onebot/models";
 import { cached, days } from "~/lib/utils/cache";
 
 export class UserService {

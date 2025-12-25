@@ -1,5 +1,5 @@
-import type { OneBotClient } from "~/lib/modules/onebot";
-import type { Group, GroupId, GroupMemberInfo } from "~/lib/modules/onebot/models";
+import type { OneBotClient } from "~/lib/clients/onebot";
+import type { Group, GroupId, GroupMemberInfo } from "~/lib/clients/onebot/models";
 import { cached, days } from "~/lib/utils/cache";
 
 export class GroupService {

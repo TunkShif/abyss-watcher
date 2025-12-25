@@ -1,6 +1,5 @@
 import { up } from "up-fetch";
-import type { Logger } from "~/lib/logger";
-import type { AnyMessage } from "~/lib/modules/onebot/message";
+import type { AnyMessage } from "~/lib/clients/onebot/message";
 import {
   GetFriendListResponseSchema,
   GetGroupListResponseSchema,
@@ -12,7 +11,8 @@ import {
   ResponseSchema,
   type User,
   type UserId,
-} from "~/lib/modules/onebot/models";
+} from "~/lib/clients/onebot/models";
+import type { Logger } from "~/lib/logger";
 
 export interface OneBotClient {
   getGroupList(nextToken?: string): Promise<Group[]>;

@@ -36,6 +36,8 @@ export const GroupSchema = v.object({
   group_all_shut: v.enum(Bool),
   group_id: v.number(),
   group_name: v.string(),
+  member_count: v.number(),
+  max_member_cont: v.number(),
 });
 
 export type Group = v.InferOutput<typeof GroupSchema>;

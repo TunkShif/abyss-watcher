@@ -1,7 +1,7 @@
+import { createOneBotClient } from "~/lib/clients/onebot";
 import type { Logger } from "~/lib/logger";
 import { AuthService } from "~/lib/modules/auth";
 import { NotifyService } from "~/lib/modules/notify";
-import { createOneBotClient } from "~/lib/modules/onebot";
 import { SessionService } from "~/lib/modules/session";
 import { UserService } from "~/lib/modules/user";
 

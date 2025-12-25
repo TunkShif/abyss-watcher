@@ -1,7 +1,7 @@
+import type { OneBotClient } from "~/lib/clients/onebot";
+import type { UserId } from "~/lib/clients/onebot/models";
 import type { Logger } from "~/lib/logger";
 import { buildAuthRequestTemplate } from "~/lib/modules/notify/templates";
-import type { OneBotClient } from "~/lib/modules/onebot";
-import type { UserId } from "~/lib/modules/onebot/models";
 
 export class NotifyService {
   #bot: OneBotClient;

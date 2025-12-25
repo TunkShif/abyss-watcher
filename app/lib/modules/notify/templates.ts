@@ -1,4 +1,4 @@
-import type { AnyMessage } from "~/lib/modules/onebot/message";
+import type { AnyMessage } from "~/lib/clients/onebot/message";
 import { toSegmentedCode } from "~/lib/utils/code";
 
 type TemplateBuilder<Args extends Record<string, string>> = (args: Args) => AnyMessage[];

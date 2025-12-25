@@ -39,7 +39,7 @@ export async function action({ request, context: { app } }: Route.ActionArgs) {
 export default function Login({ actionData }: Route.ComponentProps) {
   return (
     <div className="min-h-screen bg-abyss-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <BackgrounEffects />
+      <BackgroundEffects />
       <LoginForm>{actionData?.step === "verify" ? <VerifyStep /> : <InputStep />}</LoginForm>
     </div>
   );
@@ -201,7 +201,7 @@ const VerifyStep = () => {
   );
 };
 
-const BackgrounEffects = () => (
+const BackgroundEffects = () => (
   <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
     <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-neon-blue/10 rounded-full blur-3xl mix-blend-screen animate-pulse"></div>
     <div

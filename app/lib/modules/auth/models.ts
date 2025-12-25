@@ -1,4 +1,4 @@
-import type { User } from "~/lib/modules/onebot/models";
+import type { User } from "~/lib/clients/onebot/models";
 
 export interface CookieSessionData {
   token: string;

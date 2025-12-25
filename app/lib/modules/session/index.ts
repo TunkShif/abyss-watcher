@@ -1,8 +1,8 @@
 import { sha256 } from "@oslojs/crypto/sha2";
 import { encodeBase64url, encodeHexLowerCase } from "@oslojs/encoding";
 import * as v from "valibot";
+import type { UserId } from "~/lib/clients/onebot/models";
 import type { Logger } from "~/lib/logger";
-import type { UserId } from "~/lib/modules/onebot/models";
 import { type SessionData, SessionDataSchema } from "~/lib/modules/session/models";
 import type { UserService } from "~/lib/modules/user";
 
