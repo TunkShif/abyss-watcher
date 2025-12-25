@@ -11,3 +11,11 @@ export const buildAuthRequestTemplate: TemplateBuilder<{ code: string }> = ({ co
     },
   },
 ];
+
+export const buildSimpleNotificationtemplate: TemplateBuilder<{ avatarUrl: string; text: string }> = ({
+  avatarUrl,
+  text,
+}) => [
+  { type: "image", data: { file: avatarUrl } },
+  { type: "text", data: { text } },
+];

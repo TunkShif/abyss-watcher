@@ -1,21 +1,30 @@
 import { Edit2, LinkIcon, Save, Settings, X } from "lucide-react";
 import { type FC, useState } from "react";
-import type { Group } from "~/lib/clients/onebot/models";
 import type { Route } from "./+types/route";
 
 export async function loader({ context: { app } }: Route.LoaderArgs) {
-  // fetch all groups(binded users (user stats))
+  const groups = await app.services.statsService.getGroupStats();
+
+  return { groups };
 }
 
-export default function Dashboard() {
+export default function Dashboard({ loaderData }: Route.ComponentProps) {
+  const { groups } = loaderData;
+
+  const totalPlayers = groups.reduce((acc, g) => acc + g.boundUsers.length, 0);
+  const inGamePlayers = groups.reduce((acc, g) => acc + g.boundUsers.filter((p) => p.summary.gameextrainfo).length, 0);
+  const onlinePlayers = groups.reduce(
+    (acc, g) => acc + g.boundUsers.filter((p) => p.summary.personastate !== 0).length,
+    0,
+  );
+
   const stats = {
-    online: 4,
-    inGame: 2,
-    total: 6,
+    online: onlinePlayers,
+    inGame: inGamePlayers,
+    total: totalPlayers,
   };
 
-  const users = MOCK_USERS;
-  const filteredGroups = MOCK_GROUPS;
+  const filteredGroups = groups;
 
   return (
     <>
@@ -33,13 +42,15 @@ export default function Dashboard() {
           </div>
         ) : (
           filteredGroups.map((group) => (
-            <div key={group.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div key={group.groupId} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="flex items-baseline gap-4 mb-4 border-b border-white/5 pb-2">
-                <h2 className="text-xl font-bold text-slate-200">{group.name}</h2>
-                <span className="text-xs text-slate-500 font-mono uppercase tracking-widest">{group.description}</span>
+                <h2 className="text-xl font-bold text-slate-200">{group.groupName}</h2>
+                <span className="text-xs text-slate-500 font-mono uppercase tracking-widest leading-none">
+                  {group.groupId}
+                </span>
                 <div className="ml-auto flex items-center gap-3">
                   <span className="text-xs text-slate-600 bg-abyss-900 px-2 py-1 rounded-full">
-                    {group.userIds.length} members
+                    {group.memberCount} members
                   </span>
                   <button
                     type="button"
@@ -52,9 +63,29 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {group.userIds.map((userId) => (
-                  <UserCard key={userId} user={users[userId]} onUpdateSteamId={() => {}} />
-                ))}
+                {group.boundUsers.map((player) => {
+                  const steam = player.summary;
+                  const status = steam.gameextrainfo
+                    ? UserStatus.IN_GAME
+                    : steam.personastate === 1
+                      ? UserStatus.ONLINE
+                      : steam.personastate === 2
+                        ? UserStatus.BUSY
+                        : steam.personastate === 3 || steam.personastate === 4
+                          ? UserStatus.AWAY
+                          : UserStatus.OFFLINE;
+
+                  const user: SteamUser = {
+                    id: player.userId,
+                    name: player.userName,
+                    avatarUrl: steam.avatarfull,
+                    status,
+                    gameName: steam.gameextrainfo,
+                    steamId: steam.steamid,
+                  };
+
+                  return <UserCard key={player.userId} user={user} onUpdateSteamId={() => {}} />;
+                })}
               </div>
             </div>
           ))
@@ -84,51 +115,6 @@ const InGameStatCard: FC<{ inGame: number }> = ({ inGame }) => {
         <div className="w-2 h-2 rounded-full bg-neon-green"></div> ACTIVE IN-GAME
       </div>
       <div className="text-4xl font-mono font-bold text-white">{inGame}</div>
-    </div>
-  );
-};
-
-const GroupsGrid: FC<{ groups: Group[] }> = ({ groups }) => {
-  if (groups.length === 0)
-    return (
-      <div className="text-center py-20 text-slate-600">
-        <p>No entities found in the void.</p>
-      </div>
-    );
-  return groups.map((group) => <GroupItem key={group.group_id} group={group} />);
-};
-
-// Group {
-// all memeber
-// binded member {
-// status
-// }
-// }
-
-const GroupItem: FC<{ group: Group }> = ({ group }) => {
-  return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-baseline gap-4 mb-4 border-b border-white/5 pb-2">
-        <h2 className="text-xl font-bold text-slate-200">{group.group_name}</h2>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs text-slate-600 bg-abyss-900 px-2 py-1 rounded-full">
-            {group.member_count} members
-          </span>
-          <button
-            type="button"
-            className="p-1.5 text-slate-500 hover:text-neon-blue hover:bg-neon-blue/10 rounded-md transition-all"
-            title="Manage Group"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {group.userIds.map((userId) => (
-          <UserCard key={userId} user={users[userId]} onUpdateSteamId={() => {}} />
-        ))}
-      </div>
     </div>
   );
 };
@@ -242,7 +228,7 @@ const UserCard: React.FC<UserCardProps> = ({ user, onUpdateSteamId }) => {
                 className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity cursor-help"
                 title={`ID: ${user.steamId}`}
               >
-                <LinkIcon className="w-3 h-3" /> ID BOUND
+                <LinkIcon className="w-3 h-3" /> ID BOUND {user.steamId}
               </span>
             ) : (
               <span className="flex items-center gap-1 text-slate-600">
@@ -304,94 +290,4 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, gameName }) => {
       </span>
     </div>
   );
-};
-
-const MOCK_GROUPS = [
-  {
-    id: "g1",
-    name: "Raid Team Alpha",
-    description: "Core raiding group for MMOs",
-    userIds: ["u1", "u4", "u6"],
-  },
-  {
-    id: "g2",
-    name: "Late Night Crew",
-    description: "Casual games after midnight",
-    userIds: ["u2", "u3", "u5", "u7"],
-  },
-  {
-    id: "g3",
-    name: "AFK Legends",
-    description: "People who are never online",
-    userIds: ["u8"],
-  },
-];
-
-const MOCK_ACTIVITY_DATA = [
-  { time: "00:00", onlineCount: 2, inGameCount: 1 },
-  { time: "04:00", onlineCount: 1, inGameCount: 0 },
-  { time: "08:00", onlineCount: 3, inGameCount: 1 },
-  { time: "12:00", onlineCount: 5, inGameCount: 2 },
-  { time: "16:00", onlineCount: 6, inGameCount: 4 },
-  { time: "20:00", onlineCount: 7, inGameCount: 5 },
-  { time: "24:00", onlineCount: 4, inGameCount: 3 },
-];
-
-const MOCK_USERS: Record<string, SteamUser> = {
-  u1: {
-    id: "u1",
-    name: "VoidWalker",
-    avatarUrl: "https://picsum.photos/100/100?random=1",
-    status: UserStatus.IN_GAME,
-    gameName: "Elden Ring",
-    steamId: "76561198000000001",
-  },
-  u2: {
-    id: "u2",
-    name: "Solaris",
-    avatarUrl: "https://picsum.photos/100/100?random=2",
-    status: UserStatus.ONLINE,
-    steamId: "76561198000000002",
-  },
-  u3: {
-    id: "u3",
-    name: "NullPointer",
-    avatarUrl: "https://picsum.photos/100/100?random=3",
-    status: UserStatus.OFFLINE,
-    lastOnline: "2 hours ago",
-    steamId: "76561198000000003",
-  },
-  u4: {
-    id: "u4",
-    name: "AzureKnight",
-    avatarUrl: "https://picsum.photos/100/100?random=4",
-    status: UserStatus.IN_GAME,
-    gameName: "Counter-Strike 2",
-  },
-  u5: {
-    id: "u5",
-    name: "PixelMage",
-    avatarUrl: "https://picsum.photos/100/100?random=5",
-    status: UserStatus.AWAY,
-  },
-  u6: {
-    id: "u6",
-    name: "ShadowBlade",
-    avatarUrl: "https://picsum.photos/100/100?random=6",
-    status: UserStatus.IN_GAME,
-    gameName: "Baldur's Gate 3",
-  },
-  u7: {
-    id: "u7",
-    name: "Glitch",
-    avatarUrl: "https://picsum.photos/100/100?random=7",
-    status: UserStatus.BUSY,
-  },
-  u8: {
-    id: "u8",
-    name: "Echo",
-    avatarUrl: "https://picsum.photos/100/100?random=8",
-    status: UserStatus.OFFLINE,
-    lastOnline: "5 days ago",
-  },
 };

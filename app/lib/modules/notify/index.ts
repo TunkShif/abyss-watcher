@@ -1,7 +1,7 @@
 import type { OneBotClient } from "~/lib/clients/onebot";
-import type { UserId } from "~/lib/clients/onebot/models";
+import type { GroupId, UserId } from "~/lib/clients/onebot/models";
 import type { Logger } from "~/lib/logger";
-import { buildAuthRequestTemplate } from "~/lib/modules/notify/templates";
+import { buildAuthRequestTemplate, buildSimpleNotificationtemplate } from "~/lib/modules/notify/templates";
 
 export class NotifyService {
   #bot: OneBotClient;
@@ -16,5 +16,11 @@ export class NotifyService {
     this.#logger.info({ userId }, "sending auth request message");
     const message = buildAuthRequestTemplate({ code });
     await this.#bot.sendPrivateMessage(userId, message);
+  }
+
+  async sendSimpleNotificationMessage(groupId: GroupId, avatarUrl: string, text: string) {
+    this.#logger.info({ groupId, text }, "sending simple notification message");
+    const message = buildSimpleNotificationtemplate({ avatarUrl, text });
+    await this.#bot.sendGroupMessage(groupId, message);
   }
 }

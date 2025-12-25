@@ -37,7 +37,7 @@ export const GroupSchema = v.object({
   group_id: v.number(),
   group_name: v.string(),
   member_count: v.number(),
-  max_member_cont: v.number(),
+  max_member_count: v.number(),
 });
 
 export type Group = v.InferOutput<typeof GroupSchema>;

@@ -4,8 +4,8 @@ import { primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const playersUsers = sqliteTable(
   "players_users",
   {
-    userId: text("user_id"),
-    playerId: text("player_id"),
+    userId: text("user_id").notNull(),
+    playerId: text("player_id").notNull(),
     createdAt: text().notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [primaryKey({ columns: [table.userId, table.playerId] })],
@@ -17,8 +17,8 @@ export type InsertPlayersUsersParams = typeof playersUsers.$inferInsert;
 export const groupsUsers = sqliteTable(
   "groups_users",
   {
-    userId: text("user_id"),
-    groupId: text("group_id"),
+    userId: text("user_id").notNull(),
+    groupId: text("group_id").notNull(),
     createdAt: text().notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [primaryKey({ columns: [table.userId, table.groupId] })],

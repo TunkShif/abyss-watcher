@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "c8629104-389f-4aef-9492-46643762de75",
+  "id": "02b75690-9846-47f5-b394-591607719fc7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "groups_users": {
@@ -11,14 +11,14 @@
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "group_id": {
           "name": "group_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "createdAt": {
@@ -51,14 +51,14 @@
           "name": "user_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "player_id": {
           "name": "player_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "createdAt": {
