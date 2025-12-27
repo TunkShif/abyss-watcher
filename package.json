@@ -21,6 +21,7 @@
     "@oslojs/encoding": "^1.1.0",
     "@react-router/node": "^7.11.0",
     "@react-router/serve": "^7.11.0",
+    "canvas": "^3.2.0",
     "croner": "^9.1.0",
     "drizzle-orm": "^0.45.1",
     "es-toolkit": "^1.43.0",
