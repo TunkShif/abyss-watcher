@@ -12,7 +12,7 @@
     "enabled": true,
     "indentStyle": "space",
     "lineWidth": 120,
-    "includes": ["./app/**", "./workers/**"]
+    "includes": ["./app/**", "./*.{js,ts,json}"]
   },
   "linter": {
     "enabled": true,

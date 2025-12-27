@@ -1,7 +1,8 @@
 import { ArrowRight, Lock, RefreshCw, Shield, ShieldAlert, Zap } from "lucide-react";
 import type { PropsWithChildren } from "react";
 import { Form, href, Link, redirect, useActionData, useNavigation } from "react-router";
-import { toVerificationCode } from "~/lib/utils/code";
+import { AuthService } from "~/lib/modules/auth";
+import { toVerificationCode } from "~/lib/modules/auth/verification";
 import { title } from "~/lib/utils/meta";
 import { parseFormData } from "~/lib/utils/validation";
 import { FormSchema } from "~/routes/login/schema";
@@ -11,28 +12,20 @@ export function meta(_: Route.MetaArgs) {
   return [{ title: title("Login") }, { name: "description", content: "Log into Abyss Watcher" }];
 }
 
-export async function action({ request, context: { app } }: Route.ActionArgs) {
+export async function action({ request }: Route.ActionArgs) {
   const form = await parseFormData(FormSchema, request);
   if (form.intent === "request") {
-    await app.services.authService.request(form.userId);
+    await AuthService.requestAuthCode(form.userId);
     return {
       step: "verify",
       userId: form.userId,
       success: true,
     };
   } else if (form.intent === "verify") {
-    const { success, cookie } = await app.services.authService.login(
-      request,
-      form.userId,
-      toVerificationCode(form.code),
-    );
-    if (success) {
-      return redirect(href("/dashboard"), {
-        headers: { "Set-Cookie": cookie },
-      });
-    } else {
-      throw new Error("invalid verification code");
-    }
+    const cookie = await AuthService.login(request, form.userId, toVerificationCode(form.code));
+    return redirect(href("/dashboard"), {
+      headers: { "Set-Cookie": cookie },
+    });
   }
 }
 

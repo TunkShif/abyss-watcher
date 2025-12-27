@@ -1,0 +1,4 @@
+export const MAX_LOGIN_ATTEMPTS = 5;
+
+export const VERIFICATION_CODE_LENGTH = 12;
+export const VERIFICATION_CODE_EXPIRY_MINUTES = 2;

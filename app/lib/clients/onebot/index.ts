@@ -12,7 +12,9 @@ import {
   type User,
   type UserId,
 } from "~/lib/clients/onebot/models";
-import type { Logger } from "~/lib/logger";
+import { env } from "~/lib/env";
+import { createLogger } from "~/lib/logging";
+import { withLogging } from "~/lib/utils/client";
 
 export interface OneBotClient {
   getGroupList(nextToken?: string): Promise<Group[]>;
@@ -23,86 +25,83 @@ export interface OneBotClient {
   sendGroupMessage(groupId: GroupId, message: AnyMessage[]): Promise<void>;
 }
 
-// TODO: error handling
-export const createOneBotClient = (baseUrl: string, token: string, logger: Logger): OneBotClient => {
-  const log = logger.child({ module: "client.onebot" });
-  const upfetch = up(fetch, () => ({
-    baseUrl,
+const logger = createLogger("client.onebot");
+
+const upfetch = up(fetch, () =>
+  withLogging({
+    logger,
+    baseUrl: env.ONEBOT_BASE_URL,
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${env.ONEBBOT_TOKEN}`,
     },
-  }));
+  }),
+);
 
-  return {
-    async getGroupList(nextToken) {
-      log.debug({ nextToken }, "fetching group list");
-      const response = await upfetch("/get_group_list", {
-        method: "POST",
-        body: { next_token: nextToken },
-        schema: GetGroupListResponseSchema,
-      });
-      return response.data ?? [];
-    },
+export const OneBot: OneBotClient = {
+  async getGroupList(nextToken) {
+    const response = await upfetch("/get_group_list", {
+      method: "POST",
+      body: { next_token: nextToken },
+      schema: GetGroupListResponseSchema,
+    });
+    return response.data ?? [];
+  },
 
-    async getFriendList(noCache = false) {
-      log.debug({ noCache }, "fetching friend list");
-      const response = await upfetch("/get_friend_list", {
-        method: "POST",
-        body: { no_cache: noCache },
-        schema: GetFriendListResponseSchema,
-      });
-      return response.data ?? [];
-    },
+  async getFriendList(noCache = false) {
+    const response = await upfetch("/get_friend_list", {
+      method: "POST",
+      body: { no_cache: noCache },
+      schema: GetFriendListResponseSchema,
+    });
+    return response.data ?? [];
+  },
 
-    async getGroupMemberList(groupId, noCache = false) {
-      log.debug({ groupId, noCache }, "fetching group member list");
-      const response = await upfetch("/get_group_member_list", {
-        method: "POST",
-        body: {
-          group_id: groupId,
-          no_cache: noCache,
-        },
-        schema: GetGroupMemberListResponseSchema,
-      });
-      return response.data ?? [];
-    },
+  async getGroupMemberList(groupId, noCache = false) {
+    const response = await upfetch("/get_group_member_list", {
+      method: "POST",
+      body: {
+        group_id: groupId,
+        no_cache: noCache,
+      },
+      schema: GetGroupMemberListResponseSchema,
+    });
+    return response.data ?? [];
+  },
 
-    async getGroupMemberInfo(groupId, userId, noCache = false) {
-      log.debug({ groupId, userId, noCache }, "fetching group member info");
-      const response = await upfetch("/get_group_member_info", {
-        method: "POST",
-        body: {
-          group_id: groupId,
-          user_id: userId,
-          no_cache: noCache,
-        },
-        schema: GetGroupMemberInfoResponseSchema,
-      });
-      return response.data;
-    },
+  async getGroupMemberInfo(groupId, userId, noCache = false) {
+    const response = await upfetch("/get_group_member_info", {
+      method: "POST",
+      body: {
+        group_id: groupId,
+        user_id: userId,
+        no_cache: noCache,
+      },
+      schema: GetGroupMemberInfoResponseSchema,
+    });
+    return response.data;
+  },
 
-    async sendPrivateMessage(userId, message) {
-      log.info({ userId }, "sending private message");
-      await upfetch("/send_private_msg", {
-        method: "POST",
-        body: {
-          user_id: userId,
-          message,
-        },
-        schema: ResponseSchema,
-      });
-    },
+  async sendPrivateMessage(userId, message) {
+    logger.info({ userId, message }, "sending private message");
+    await upfetch("/send_private_msg", {
+      method: "POST",
+      body: {
+        user_id: userId,
+        message,
+      },
+      schema: ResponseSchema,
+    });
+  },
 
-    async sendGroupMessage(groupId, message) {
-      log.info({ groupId }, "sending group message");
-      await upfetch("/send_group_msg", {
-        method: "POST",
-        body: {
-          group_id: groupId,
-          message,
-        },
-        schema: ResponseSchema,
-      });
-    },
-  };
+  async sendGroupMessage(groupId, message) {
+    logger.info({ groupId, message }, "sending group message");
+    await upfetch("/send_group_msg", {
+      method: "POST",
+      body: {
+        group_id: groupId,
+        message,
+      },
+      schema: ResponseSchema,
+    });
+  },
 };

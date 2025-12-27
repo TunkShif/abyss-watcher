@@ -1,56 +1,26 @@
 import { eq } from "drizzle-orm";
-import type { OneBotClient } from "~/lib/clients/onebot";
+import { OneBot } from "~/lib/clients/onebot";
 import type { Group, GroupId, GroupMemberInfo } from "~/lib/clients/onebot/models";
-import type { Database } from "~/lib/database";
+import { db } from "~/lib/database";
 import { groupsUsers, playersUsers } from "~/lib/database/schema";
-import type { Logger } from "~/lib/logger";
-import { cached, days } from "~/lib/utils/cache";
+import { createLogger } from "~/lib/logging";
 import type { BoundUser, GroupWithBoundUsers } from "./models";
 
-export class GroupService {
-  #db: Database;
-  #kv: KVNamespace;
-  #bot: OneBotClient;
-  #logger: Logger;
-
-  constructor(db: Database, kv: KVNamespace, bot: OneBotClient, logger: Logger) {
-    this.#db = db;
-    this.#bot = bot;
-    this.#kv = kv;
-    this.#logger = logger.child({ module: "service.group" });
-  }
-
+export interface GroupService {
   /**
    * Lists all groups the bot is in, with caching.
    *
-   * @param noCache - If true, bypasses the cache and fetches fresh data.
    * @returns A promise that resolves to an array of groups.
    */
-  async listGroups(noCache = false): Promise<Group[]> {
-    return cached(() => this.#bot.getGroupList(), {
-      kv: this.#kv,
-      key: "groups",
-      expirationTtl: days(1),
-      noCache,
-    });
-  }
+  listGroups(): Promise<Group[]>;
 
   /**
    * Lists all members of a specific group, with caching.
    *
    * @param groupId - The ID of the group to list members for.
-   * @param noCache - If true, bypasses the cache and fetches fresh data.
    * @returns A promise that resolves to an array of group members.
    */
-  async listMembers(groupId: GroupId, noCache = false): Promise<GroupMemberInfo[]> {
-    return cached(() => this.#bot.getGroupMemberList(groupId), {
-      kv: this.#kv,
-      key: `groups:${groupId}:members`,
-      expirationTtl: days(1),
-      noCache,
-    });
-  }
-
+  listMembers(groupId: GroupId): Promise<GroupMemberInfo[]>;
   /**
    * Lists all groups with users who have bound Steam player IDs.
    *
@@ -64,15 +34,27 @@ export class GroupService {
    *
    * @returns A promise that resolves to an array of groups with their bound users and details.
    */
+  listGroupsWithBoundPlayers(): Promise<GroupWithBoundUsers[]>;
+}
+
+const logger = createLogger("service.group");
+
+export const GroupService: GroupService = {
+  async listGroups(): Promise<Group[]> {
+    return OneBot.getGroupList();
+  },
+  async listMembers(groupId: GroupId): Promise<GroupMemberInfo[]> {
+    return OneBot.getGroupMemberList(groupId);
+  },
   async listGroupsWithBoundPlayers(): Promise<GroupWithBoundUsers[]> {
-    this.#logger.debug("listing groups with bound players");
+    logger.debug("listing groups with bound players");
 
     // 1. List all groups from bot client
     const groups = await this.listGroups();
-    this.#logger.debug({ groupCount: groups.length }, "fetched groups from bot client");
+    logger.debug({ groupCount: groups.length }, "fetched groups from bot client");
 
     // 2. Find users that have groupsUsers relation with bound steam IDs
-    const boundUsers = await this.#db
+    const boundUsers = await db
       .select({
         userId: groupsUsers.userId,
         groupId: groupsUsers.groupId,
@@ -82,11 +64,11 @@ export class GroupService {
       .innerJoin(playersUsers, eq(groupsUsers.userId, playersUsers.userId))
       .all();
 
-    this.#logger.debug({ boundUserCount: boundUsers.length }, "fetched bound users from database");
+    logger.debug({ boundUserCount: boundUsers.length }, "fetched bound users from database");
 
     // FIXME: should return group with empty users
     if (boundUsers.length === 0) {
-      this.#logger.info("no bound users found, returning empty result");
+      logger.info("no bound users found, returning empty result");
       return [];
     }
 
@@ -109,7 +91,7 @@ export class GroupService {
 
       if (!groupUsers) continue;
 
-      this.#logger.debug({ groupId, groupName: group.group_name, userCount: groupUsers.length }, "processing group");
+      logger.debug({ groupId, groupName: group.group_name, userCount: groupUsers.length }, "processing group");
 
       // Get member info to retrieve user names
       const members = await this.listMembers(group.group_id);
@@ -134,16 +116,16 @@ export class GroupService {
           memberCount: group.member_count,
           boundUsers: users,
         });
-        this.#logger.info(
+        logger.info(
           { groupId, groupName: group.group_name, boundUserCount: users.length },
           "added group with bound users",
         );
       } else {
-        this.#logger.warn({ groupId, groupName: group.group_name }, "group has no valid bound users after filtering");
+        logger.warn({ groupId, groupName: group.group_name }, "group has no valid bound users after filtering");
       }
     }
 
-    this.#logger.info({ resultCount: result.length }, "completed listing groups with bound players");
+    logger.info({ resultCount: result.length }, "completed listing groups with bound players");
     return result;
-  }
-}
+  },
+};

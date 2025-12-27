@@ -1,8 +1,5 @@
 import * as v from "valibot";
 
-/**
- * Steam Persona State
- */
 export enum SteamPersonaState {
   Offline = 0,
   Online = 1,
@@ -13,28 +10,26 @@ export enum SteamPersonaState {
   LookingToPlay = 6,
 }
 
-/**
- * Steam Community Visibility State
- */
 export enum SteamCommunityVisibilityState {
   Private = 1,
   Public = 3,
 }
 
-/**
- * Steam Profile State
- */
 export enum SteamProfileState {
   NotConfigured = 0,
   Configured = 1,
 }
 
-/**
- * Steam Comment Permission
- */
 export enum SteamCommentPermission {
   FriendsOnly = 1,
   Everyone = 2,
+}
+
+/**
+ * Steam Language Code
+ */
+export enum SteamLanguageCode {
+  ChineseSimplified = "schinese",
 }
 
 /**
@@ -145,3 +140,13 @@ export const SteamPlayerAchievementsResponseSchema = v.object({
 });
 
 export type SteamPlayerAchievementsResponse = v.InferOutput<typeof SteamPlayerAchievementsResponseSchema>;
+
+export const SteamPersonaStateTextMap: Record<SteamPersonaState, string> = {
+  [SteamPersonaState.Offline]: "离线",
+  [SteamPersonaState.Online]: "在线",
+  [SteamPersonaState.Busy]: "忙碌",
+  [SteamPersonaState.Away]: "离开",
+  [SteamPersonaState.Snooze]: "休眠",
+  [SteamPersonaState.LookingToTrade]: "交易",
+  [SteamPersonaState.LookingToPlay]: "游戏",
+};

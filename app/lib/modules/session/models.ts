@@ -1,8 +1,12 @@
 import * as v from "valibot";
 
-export const SessionDataSchema = v.object({
+export const SessionTokenSchema = v.object({
   userId: v.string(),
-  expiresAt: v.number(),
+  token: v.string(),
+  expiresAt: v.pipe(
+    v.union([v.number(), v.string()]),
+    v.transform((v) => Number(v)),
+  ),
 });
 
-export type SessionData = v.InferOutput<typeof SessionDataSchema>;
+export type SessionToken = v.InferOutput<typeof SessionTokenSchema>;

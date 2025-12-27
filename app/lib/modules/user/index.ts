@@ -1,35 +1,24 @@
-import type { OneBotClient } from "~/lib/clients/onebot";
+import { OneBot } from "~/lib/clients/onebot";
 import type { User, UserId } from "~/lib/clients/onebot/models";
-import type { Logger } from "~/lib/logger";
-import { cached, days } from "~/lib/utils/cache";
+import { createLogger } from "~/lib/logging";
 
-export class UserService {
-  #bot: OneBotClient;
-  #kv: KVNamespace;
-  #logger: Logger;
+export interface UserService {
+  list(): Promise<User[]>;
+  find(userId: UserId): Promise<User | null>;
+}
 
-  constructor(kv: KVNamespace, bot: OneBotClient, logger: Logger) {
-    this.#bot = bot;
-    this.#kv = kv;
-    this.#logger = logger.child({ module: "service.user" });
-  }
+const logger = createLogger("service.user");
 
-  async list(noCache = false): Promise<User[]> {
-    return cached(() => this.#bot.getFriendList(), {
-      kv: this.#kv,
-      key: "users",
-      expirationTtl: days(1),
-      noCache,
-    });
-  }
-
-  async find(userId: UserId): Promise<User | null> {
-    this.#logger.debug({ userId }, "finding user");
-    const users = await this.list();
+export const UserService: UserService = {
+  async list() {
+    return OneBot.getFriendList();
+  },
+  async find(userId) {
+    const users = await UserService.list();
     const user = users.find((it) => it.user_id.toString() === userId.toString()) ?? null;
     if (!user) {
-      this.#logger.warn({ userId }, "user not found");
+      logger.warn({ userId }, "user not found");
     }
     return user;
-  }
-}
+  },
+};

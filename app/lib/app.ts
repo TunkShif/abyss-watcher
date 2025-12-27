@@ -1,7 +1,7 @@
 import { createOneBotClient } from "~/lib/clients/onebot";
 import { createSteamAPIClient } from "~/lib/clients/steam";
 import { createDatabase } from "~/lib/database";
-import type { Logger } from "~/lib/logger";
+import type { Logger } from "~/lib/logging";
 import { AuthService } from "~/lib/modules/auth";
 import { GroupService } from "~/lib/modules/group";
 import { NotifyService } from "~/lib/modules/notify";

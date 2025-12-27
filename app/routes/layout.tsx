@@ -2,6 +2,7 @@ import { Bell, LayoutDashboard, LogOut, Search, Settings, Users, Zap } from "luc
 import type { FC } from "react";
 import { data, href, Link, NavLink, Outlet, redirect } from "react-router";
 import type { User } from "~/lib/clients/onebot/models";
+import { AuthService } from "~/lib/modules/auth";
 import { avatarUrl } from "~/lib/utils/avatar";
 import { title } from "~/lib/utils/meta";
 import type { Route } from "./+types/layout";
@@ -10,8 +11,8 @@ export function meta(_: Route.MetaArgs) {
   return [{ title: title("Dashboard") }, { name: "description", content: "Welcome to Abyss Watcher!" }];
 }
 
-export async function loader({ request, context: { app } }: Route.LoaderArgs) {
-  const { user, cookie } = await app.services.authService.validate(request);
+export async function loader({ request }: Route.LoaderArgs) {
+  const [user, cookie] = await AuthService.fetchCurrentUser(request);
   if (!user) {
     return redirect(href("/login"), {
       headers: { "Set-Cookie": cookie },

@@ -1,4 +1,7 @@
 import { up } from "up-fetch";
+import { env } from "~/lib/env";
+import { createLogger } from "~/lib/logging";
+import { withLogging } from "~/lib/utils/client";
 import {
   type SteamPlayerAchievement,
   SteamPlayerAchievementsResponseSchema,
@@ -24,42 +27,44 @@ export interface SteamAPIClient {
   getPlayerAchievements(steamId: string, appId: number, language?: string): Promise<SteamPlayerAchievement[]>;
 }
 
-// TODO: error handling & logging
-export const createSteamAPIClient = (apiKey: string): SteamAPIClient => {
-  const upfetch = up(fetch, () => ({
+const logger = createLogger("client.steam");
+
+const upfetch = up(fetch, () =>
+  withLogging({
+    logger,
     baseUrl: "http://api.steampowered.com",
     params: {
-      key: apiKey,
+      key: env.STEAM_WEBAPI_TOKEN,
     },
-  }));
+  }),
+);
 
-  return {
-    async getPlayerSummaries(steamIds: string[]) {
-      const data = await upfetch("/ISteamUser/GetPlayerSummaries/v0002/", {
-        params: {
-          steamids: steamIds.join(","),
-        },
-        schema: SteamPlayerSummaryResponseSchema,
-      });
+export const SteamAPI: SteamAPIClient = {
+  async getPlayerSummaries(steamIds: string[]) {
+    const data = await upfetch("/ISteamUser/GetPlayerSummaries/v0002/", {
+      params: {
+        steamids: steamIds.join(","),
+      },
+      schema: SteamPlayerSummaryResponseSchema,
+    });
 
-      return data.response.players;
-    },
+    return data.response.players;
+  },
 
-    async getPlayerAchievements(steamId: string, appId: number, language?: string) {
-      const data = await upfetch("/ISteamUserStats/GetPlayerAchievements/v0001/", {
-        params: {
-          steamid: steamId,
-          appid: appId,
-          l: language,
-        },
-        schema: SteamPlayerAchievementsResponseSchema,
-      });
+  async getPlayerAchievements(steamId: string, appId: number, language?: string) {
+    const data = await upfetch("/ISteamUserStats/GetPlayerAchievements/v0001/", {
+      params: {
+        steamid: steamId,
+        appid: appId,
+        l: language,
+      },
+      schema: SteamPlayerAchievementsResponseSchema,
+    });
 
-      if (!data.playerstats.success) {
-        return [];
-      }
+    if (!data.playerstats.success) {
+      return [];
+    }
 
-      return data.playerstats.achievements;
-    },
-  };
+    return data.playerstats.achievements;
+  },
 };

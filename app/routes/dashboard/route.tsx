@@ -1,9 +1,10 @@
 import { Edit2, LinkIcon, Save, Settings, X } from "lucide-react";
 import { type FC, useState } from "react";
+import { StatsService } from "~/lib/modules/stats";
 import type { Route } from "./+types/route";
 
-export async function loader({ context: { app } }: Route.LoaderArgs) {
-  const groups = await app.services.statsService.getGroupStats();
+export async function loader(_: Route.LoaderArgs) {
+  const groups = await StatsService.getGroupStats();
 
   return { groups };
 }

@@ -5,12 +5,6 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/jetbrains-mono";
 import "./app.css";
 
-export async function loader() {
-  return {
-    u: "hello",
-  };
-}
-
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
