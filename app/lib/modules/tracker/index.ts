@@ -52,6 +52,10 @@ export const Tracker: Tracker = {
       logger.info({ total: localSummaries.length }, "fetching local player summaries");
 
       const activities = detectPlayerStateChange(summaries, localSummaries);
+
+      await PlayerService.storeLocalSummaries(summaries);
+      logger.info({ total: summaries.length }, "storing latest steam player summaries to database");
+
       const palyerGroups = await GroupService.listPlayerGroupIds(activities.map((a) => a.playerId));
       const tasks: SendActivityMessageTask[] = activities.flatMap((a) => {
         const groups = palyerGroups[a.playerId] || [];

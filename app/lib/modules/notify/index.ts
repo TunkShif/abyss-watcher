@@ -37,8 +37,8 @@ export const NotifyService: NotifyService = {
         avatar,
       });
       const message = [text(`${user} 正在玩 ${game}`), image(cardUrl)];
-      await OneBot.sendPrivateMessage("1395084414", message);
-      // await OneBot.sendGroupMessage(groupId, message);
+      // await OneBot.sendPrivateMessage("1395084414", message);
+      await OneBot.sendGroupMessage(groupId, message);
     });
   },
 };
