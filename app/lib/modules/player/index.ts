@@ -23,7 +23,7 @@ export const PlayerService: PlayerService = {
       },
     });
   },
-  // TODO: maybe batch request by 100 in future
+  // TODO: maybe need to do batch querying when palyer count exceeds 100
   async fetchLatestSummaries(playerIds: string[]) {
     const summaries = await SteamAPI.getPlayerSummaries(playerIds);
     if (summaries.length !== playerIds.length) {
