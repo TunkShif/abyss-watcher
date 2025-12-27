@@ -1,12 +1,15 @@
 import { LinkIcon, Settings } from "lucide-react";
-import type { FC } from "react";
+import { type FC, Suspense } from "react";
+import { Await } from "react-router";
 import { SteamPersonaState } from "~/lib/clients/steam/models";
+import { userContext } from "~/lib/modules/auth/context";
 import { GroupService } from "~/lib/modules/group";
 import { PlayerService } from "~/lib/modules/player";
 import type { PlayerSummary } from "~/lib/modules/player/models";
+import { UserService } from "~/lib/modules/user";
 import type { Route } from "./+types/route";
 
-export async function loader() {
+export async function loader({ context }: Route.LoaderArgs) {
   // Parallelize initial independent fetches
   const [players, allGroups] = await Promise.all([PlayerService.list(), GroupService.listGroups()]);
 
@@ -63,14 +66,21 @@ export async function loader() {
     players: groupPlayers.get(g.group_id.toString()) || [],
   }));
 
+  const currentUser = context.get(userContext);
+  const groupsPerms = Promise.all(
+    allGroups.map(async (g) => [g.group_id, await UserService.isGroupAdmin(currentUser.user_id, g.group_id)] as const),
+  ).then((entries) => Object.fromEntries(entries));
+
   return {
+    userId: currentUser.user_id.toString(),
     stats,
     groups: groupsWithPlayers,
+    groupsPerms,
   };
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { stats, groups } = loaderData;
+  const { userId, stats, groups, groupsPerms } = loaderData;
 
   return (
     <>
@@ -81,7 +91,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
       </section>
 
       {/* Groups Grid */}
-      <GroupSection groups={groups} />
+      <GroupSection userId={userId} groups={groups} groupsPerms={groupsPerms} />
     </>
   );
 }
@@ -123,7 +133,11 @@ interface GroupWithPlayers {
   players: EnrichedPlayer[];
 }
 
-const GroupSection: FC<{ groups: GroupWithPlayers[] }> = ({ groups }) => {
+const GroupSection: FC<{
+  userId: string;
+  groups: GroupWithPlayers[];
+  groupsPerms: Promise<Record<string, boolean>>;
+}> = ({ userId, groups, groupsPerms }) => {
   return (
     <section className="space-y-6">
       {groups.length === 0 ? (
@@ -131,13 +145,16 @@ const GroupSection: FC<{ groups: GroupWithPlayers[] }> = ({ groups }) => {
           <p>No entities found in the void matching your query.</p>
         </div>
       ) : (
-        groups.map((group) => <GroupCard key={group.groupId} group={group} />)
+        groups.map((group) => <GroupCard key={group.groupId} userId={userId} group={group} groupsPerms={groupsPerms} />)
       )}
     </section>
   );
 };
 
-const GroupCard: FC<{ group: GroupWithPlayers }> = ({ group }) => {
+const GroupCard: FC<{ userId: string; group: GroupWithPlayers; groupsPerms: Promise<Record<string, boolean>> }> = ({
+  group,
+  groupsPerms,
+}) => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-baseline gap-4 mb-4 border-b border-white/5 pb-2">
@@ -147,13 +164,33 @@ const GroupCard: FC<{ group: GroupWithPlayers }> = ({ group }) => {
           <span className="text-xs text-slate-600 bg-abyss-900 px-2 py-1 rounded-full">
             {group.memberCount} members
           </span>
-          <button
-            type="button"
-            className="p-1.5 text-slate-500 hover:text-neon-blue hover:bg-neon-blue/10 rounded-md transition-all"
-            title="Manage Group"
+          <Suspense
+            fallback={
+              <button disabled type="button" className="p-1.5 text-slate-700 opacity-50 cursor-not-allowed rounded-md">
+                <Settings className="w-4 h-4" />
+              </button>
+            }
           >
-            <Settings className="w-4 h-4" />
-          </button>
+            <Await resolve={groupsPerms}>
+              {(perms) => {
+                const canManage = perms[group.groupId];
+                return (
+                  <button
+                    disabled={!canManage}
+                    type="button"
+                    className={`p-1.5 rounded-md transition-all ${
+                      canManage
+                        ? "text-slate-500 hover:text-neon-blue hover:bg-neon-blue/10"
+                        : "text-slate-700 opacity-50 cursor-not-allowed"
+                    }`}
+                    title={canManage ? "Manage Group" : "Insufficient Permissions"}
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                );
+              }}
+            </Await>
+          </Suspense>
         </div>
       </div>
 

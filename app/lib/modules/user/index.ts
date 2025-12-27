@@ -1,10 +1,11 @@
 import { OneBot } from "~/lib/clients/onebot";
-import type { User, UserId } from "~/lib/clients/onebot/models";
+import { type GroupId, GroupMemberRole, type User, type UserId } from "~/lib/clients/onebot/models";
 import { createLogger } from "~/lib/logging";
 
 export interface UserService {
   list(): Promise<User[]>;
   find(userId: UserId): Promise<User | null>;
+  isGroupAdmin(userId: UserId, groupId: GroupId): Promise<boolean>;
 }
 
 const logger = createLogger("service.user");
@@ -20,5 +21,9 @@ export const UserService: UserService = {
       logger.warn({ userId }, "user not found");
     }
     return user;
+  },
+  async isGroupAdmin(userId, groupId) {
+    const member = await OneBot.getGroupMemberInfo(groupId, userId);
+    return member?.role === GroupMemberRole.Owner || member?.role === GroupMemberRole.Admin;
   },
 };

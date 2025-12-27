@@ -27,10 +27,6 @@ body {
   background-color: var(--color-abyss-950);
 }
 
-button {
-  cursor: pointer;
-}
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
