@@ -1,12 +1,27 @@
 import { Edit2, LinkIcon, Save, Settings, X } from "lucide-react";
 import { type FC, useState } from "react";
+import { Form } from "react-router";
+import { globalLogger } from "~/lib/logging";
 import { StatsService } from "~/lib/modules/stats";
+import { Tracker } from "~/lib/modules/tracker";
 import type { Route } from "./+types/route";
 
 export async function loader(_: Route.LoaderArgs) {
   const groups = await StatsService.getGroupStats();
 
   return { groups };
+}
+
+// FIXME: remove this later, for test purpose only
+export async function action(_: Route.ActionArgs) {
+  try {
+    await Tracker.run();
+    globalLogger.debug("manually launched tracker task");
+  } catch (err) {
+    globalLogger.error({ err }, "manually launched tracker task failed");
+    return { ok: false };
+  }
+  return { ok: true };
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
@@ -33,6 +48,11 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
       <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <OnlineStatCard online={stats.online} total={stats.total} />
         <InGameStatCard inGame={stats.inGame} />
+        <Form method="POST">
+          <button type="submit" name="foo" value="bar">
+            baz
+          </button>
+        </Form>
       </section>
 
       {/* Groups Grid */}

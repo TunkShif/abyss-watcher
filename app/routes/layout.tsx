@@ -1,6 +1,6 @@
 import { Bell, LayoutDashboard, LogOut, Search, Settings, Users, Zap } from "lucide-react";
 import type { FC } from "react";
-import { href, Link, NavLink, Outlet } from "react-router";
+import { Form, href, Link, NavLink, Outlet } from "react-router";
 import type { User } from "~/lib/clients/onebot/models";
 import { userContext } from "~/lib/modules/auth/context";
 import { authMiddleware } from "~/lib/modules/auth/middleware";
@@ -69,7 +69,7 @@ const NavBar: FC<{ user: User }> = ({ user }) => {
               className="bg-abyss-900 border border-slate-800 rounded-full pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:border-neon-blue transition-colors w-64"
             />
           </div>
-          <button type="button" className="relative text-slate-400 hover:text-white">
+          <button type="submit" className="relative text-slate-400 hover:text-white">
             <Bell className="w-5 h-5" />
             <span className="absolute top-0 right-0 w-2 h-2 bg-neon-purple rounded-full"></span>
           </button>
