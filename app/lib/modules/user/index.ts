@@ -15,7 +15,7 @@ export const UserService: UserService = {
   },
   async find(userId) {
     const users = await UserService.list();
-    const user = users.find((it) => it.user_id.toString() === userId.toString()) ?? null;
+    const user = users.find((u) => u.user_id.toString() === userId.toString()) ?? null;
     if (!user) {
       logger.warn({ userId }, "user not found");
     }

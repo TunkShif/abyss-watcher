@@ -32,7 +32,7 @@ const upfetch = up(fetch, () =>
     logger,
     baseUrl: env.ONEBOT_BASE_URL,
     headers: {
-      Authorization: `Bearer ${env.ONEBBOT_TOKEN}`,
+      Authorization: `Bearer ${env.ONEBOT_TOKEN}`,
     },
   }),
 );

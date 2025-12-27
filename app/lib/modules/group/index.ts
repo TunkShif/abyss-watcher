@@ -1,4 +1,5 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { groupBy, mapValues } from "es-toolkit";
 import { OneBot } from "~/lib/clients/onebot";
 import type { Group, GroupId, GroupMemberInfo } from "~/lib/clients/onebot/models";
 import { db } from "~/lib/database";
@@ -21,6 +22,7 @@ export interface GroupService {
    * @returns A promise that resolves to an array of group members.
    */
   listMembers(groupId: GroupId): Promise<GroupMemberInfo[]>;
+  listPlayerGroupIds(playerIds: string[]): Promise<Record<string, string[]>>;
   /**
    * Lists all groups with users who have bound Steam player IDs.
    *
@@ -45,6 +47,21 @@ export const GroupService: GroupService = {
   },
   async listMembers(groupId: GroupId): Promise<GroupMemberInfo[]> {
     return OneBot.getGroupMemberList(groupId);
+  },
+  async listPlayerGroupIds(playerIds) {
+    const result = await db
+      .select({
+        playerId: playersUsers.playerId,
+        groupId: groupsUsers.groupId,
+      })
+      .from(groupsUsers)
+      .innerJoin(playersUsers, eq(groupsUsers.userId, playersUsers.userId))
+      .where(inArray(playersUsers.playerId, playerIds))
+      .all();
+    return mapValues(
+      groupBy(result, (r) => r.playerId),
+      (rs) => rs.map((r) => r.groupId),
+    );
   },
   async listGroupsWithBoundPlayers(): Promise<GroupWithBoundUsers[]> {
     logger.debug("listing groups with bound players");

@@ -11,7 +11,7 @@ export const EnvSchema = v.object({
   ABYSS_SECRET: v.string(),
 
   ONEBOT_BASE_URL: v.string(),
-  ONEBBOT_TOKEN: v.string(),
+  ONEBOT_TOKEN: v.string(),
   STEAM_WEBAPI_TOKEN: v.string(),
 });
 

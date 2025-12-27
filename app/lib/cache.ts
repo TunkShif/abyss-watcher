@@ -4,6 +4,8 @@
  * Provides a Redis-based caching utility with support for simple string caching
  * and structured data caching with Valibot schema validation.
  *
+ * Objects are automatically serialized to JSON strings for storage.
+ *
  * @module cache
  */
 
@@ -20,7 +22,7 @@ export const redis = new RedisClient(env.REDIS_URL);
  * Values that can be stored in the cache.
  * Can be either a simple string or an object with string/number values.
  */
-type Cacheable = string | Record<string, string | number>;
+type Cacheable = string | Record<string, unknown>;
 
 /**
  * Options for retrieving cached data with schema validation.
@@ -35,7 +37,7 @@ export interface GetOptions<T> {
 /**
  * Options for storing data in the cache.
  */
-export interface PutOptions {
+export interface SetOptions {
   /** Time in seconds until the cached entry expires */
   expire: number;
 }
@@ -75,13 +77,42 @@ export interface Cache {
    *
    * @example
    * // Cache a string
-   * await Cache.put('user:123', 'John Doe', { expire: 3600 });
+   * await Cache.set('user:123', 'John Doe', { expire: 3600 });
    *
    * @example
    * // Cache an object
-   * await Cache.put('user:123:profile', { name: 'John', age: 30 }, { expire: 3600 });
+   * await Cache.set('user:123:profile', { name: 'John', age: 30 }, { expire: 3600 });
    */
-  put(key: string, value: Cacheable, options?: PutOptions): Promise<void>;
+  set(key: string, value: Cacheable, options?: SetOptions): Promise<void>;
+
+  /**
+   * Retrieves multiple string values from the cache.
+   *
+   * @param keys - The cache keys to retrieve
+   * @returns An array of cached string values or nulls
+   */
+  mget(keys: string[]): Promise<(string | null)[]>;
+
+  /**
+   * Retrieves and validates multiple structured values from the cache using a Valibot schema.
+   *
+   * @template TSchema - The Valibot schema type for validation
+   * @param keys - The cache keys to retrieve
+   * @param options - Options containing the validation schema
+   * @returns An array of validated and parsed cached values or nulls
+   */
+  mget<const TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
+    keys: string[],
+    options?: GetOptions<TSchema>,
+  ): Promise<(v.InferOutput<TSchema> | null)[]>;
+
+  /**
+   * Stores multiple values in the cache.
+   *
+   * @param items - A record of key-value pairs to cache
+   * @param options - Optional settings including expiration time
+   */
+  mset(items: Record<string, Cacheable>, options?: SetOptions): Promise<void>;
 
   /**
    * Deletes one or more keys from the cache.
@@ -95,25 +126,66 @@ export interface Cache {
  * Cache implementation providing Redis-based caching functionality.
  *
  * Supports both simple string caching and structured object caching.
- * When caching objects, they are stored as Redis hashes and can be
- * retrieved with schema validation using Valibot.
+ * When caching objects, they are serialized to JSON and stored as strings.
+ * Retrieved values can be validated using Valibot schemas.
  */
 export const Cache: Cache = {
   async get<const TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
     key: string,
     options?: GetOptions<TSchema>,
   ) {
-    if (!options) return redis.get(key);
-    return v.parse(v.nullable(options.schema), await redis.hgetall(key));
+    const value = await redis.get(key);
+
+    if (!value) return null;
+    if (!options) return value;
+
+    // Parse JSON and validate with schema
+    const parsed = JSON.parse(value);
+    return v.parse(options.schema, parsed);
   },
-  async put(key, value, options) {
-    if (typeof value === "string") {
-      await redis.set(key, value);
+  async set(key, value, options) {
+    const stringValue = typeof value === "string" ? value : JSON.stringify(value);
+
+    if (options?.expire) {
+      await redis.set(key, stringValue, "EX", options.expire);
     } else {
-      const fields = Object.fromEntries(Object.entries(value).map(([k, v]) => [k, v.toString()]));
-      await redis.hset(key, fields);
+      await redis.set(key, stringValue);
     }
-    if (options?.expire) await redis.expire(key, options.expire);
+  },
+  async mget<const TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
+    keys: string[],
+    options?: GetOptions<TSchema>,
+  ) {
+    if (keys.length === 0) return [];
+
+    const values = await redis.mget(...keys);
+
+    if (!options) return values;
+    const schema = v.array(v.nullable(options.schema));
+    return v.parse(
+      schema,
+      values.map((value) => {
+        if (!value) return null;
+        return JSON.parse(value);
+      }),
+    );
+  },
+  async mset(items, options) {
+    const entries = Object.entries(items);
+    if (entries.length === 0) return;
+
+    const args = entries.flatMap(([key, value]) => {
+      const stringValue = typeof value === "string" ? value : JSON.stringify(value);
+      return [key, stringValue];
+    });
+
+    if (options?.expire) {
+      // Use raw command MSETEX for atomic multi-set with expiration
+      // MSETEX numkeys key value [key value ...] [EX seconds]
+      await redis.send("MSETEX", [entries.length.toString(), ...args, "EX", options.expire.toString()]);
+    } else {
+      await redis.mset(...args);
+    }
   },
   async del(...keys) {
     await redis.del(...keys);

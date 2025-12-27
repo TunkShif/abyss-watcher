@@ -1,3 +1,10 @@
 import { createHonoServer } from "react-router-hono-server/node";
+import { Tracker } from "~/lib/modules/tracker";
 
-export default await createHonoServer();
+Tracker.start();
+
+export default await createHonoServer({
+  onServe() {
+    console.log("hello");
+  },
+});

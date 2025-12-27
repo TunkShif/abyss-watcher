@@ -22,7 +22,7 @@ const targets = isProduction
         },
       },
     ]
-  : [{ target: "pino-pretty" }];
+  : [{ target: "pino-pretty" }, { target: "pino/file", options: { destination: env.LOGGING_FILE } }];
 
 export const globalLogger = pino({
   transport: { targets },

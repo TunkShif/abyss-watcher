@@ -1,8 +1,9 @@
 import { Bell, LayoutDashboard, LogOut, Search, Settings, Users, Zap } from "lucide-react";
 import type { FC } from "react";
-import { data, href, Link, NavLink, Outlet, redirect } from "react-router";
+import { href, Link, NavLink, Outlet } from "react-router";
 import type { User } from "~/lib/clients/onebot/models";
-import { AuthService } from "~/lib/modules/auth";
+import { userContext } from "~/lib/modules/auth/context";
+import { authMiddleware } from "~/lib/modules/auth/middleware";
 import { avatarUrl } from "~/lib/utils/avatar";
 import { title } from "~/lib/utils/meta";
 import type { Route } from "./+types/layout";
@@ -11,19 +12,12 @@ export function meta(_: Route.MetaArgs) {
   return [{ title: title("Dashboard") }, { name: "description", content: "Welcome to Abyss Watcher!" }];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const [user, cookie] = await AuthService.fetchCurrentUser(request);
-  if (!user) {
-    return redirect(href("/login"), {
-      headers: { "Set-Cookie": cookie },
-    });
-  }
-  return data(
-    { user },
-    {
-      headers: { "Set-Cookie": cookie },
-    },
-  );
+export const middleware: Route.MiddlewareFunction[] = [authMiddleware];
+
+export async function loader({ context }: Route.LoaderArgs) {
+  return {
+    user: context.get(userContext),
+  };
 }
 
 export default function Layout({ loaderData }: Route.ComponentProps) {

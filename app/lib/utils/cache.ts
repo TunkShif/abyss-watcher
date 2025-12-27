@@ -30,6 +30,6 @@ export const cached = async <T>(fn: () => Promise<T>, { key, expire, refresh = f
   }
   const fetched = await fn();
   const options = expire ? { expire } : undefined;
-  await Cache.put(key, JSON.stringify(fetched), options);
+  await Cache.set(key, JSON.stringify(fetched), options);
   return fetched;
 };

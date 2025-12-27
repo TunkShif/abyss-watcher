@@ -20,7 +20,7 @@ export const SessionService: SessionService = {
   async create(userId) {
     const sessionToken = createSessionToken(userId);
     const sessionKey = getSessionKey(sessionToken);
-    await Cache.put(sessionKey, sessionToken, { expire: SESSION_MAX_AGE_SECONDS });
+    await Cache.set(sessionKey, sessionToken, { expire: SESSION_MAX_AGE_SECONDS });
     return sessionToken;
   },
   async validate(sessionToken) {
@@ -46,7 +46,7 @@ export const SessionService: SessionService = {
         expiresAt: generateExpirationTime().getTime(),
       };
       const sessionKey = getSessionKey(renewedUserToken);
-      await Cache.put(sessionKey, renewedUserToken, { expire: SESSION_MAX_AGE_SECONDS });
+      await Cache.set(sessionKey, renewedUserToken, { expire: SESSION_MAX_AGE_SECONDS });
       return renewedUserToken;
     }
     return sessionToken;

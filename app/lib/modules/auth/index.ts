@@ -1,6 +1,6 @@
 import { createCookieSessionStorage } from "react-router";
 import { Cache } from "~/lib/cache";
-import type { User, UserId } from "~/lib/clients/onebot/models";
+import type { UserId } from "~/lib/clients/onebot/models";
 import { env } from "~/lib/env";
 import { createLogger } from "~/lib/logging";
 import { VERIFICATION_CODE_EXPIRY_MINUTES, VERIFICATION_CODE_LENGTH } from "~/lib/modules/auth/config";
@@ -23,12 +23,11 @@ export interface AuthService {
   requestAuthCode(userId: UserId): Promise<void>;
   login(request: Request, userId: UserId, code: string): Promise<Cookie>;
   logout(request: Request): Promise<Cookie>;
-  fetchCurrentUser(request: Request): Promise<[user: User, cookie: Cookie]>;
 }
 
 const logger = createLogger("service.auth");
 
-const { getSession, commitSession, destroySession } = createCookieSessionStorage<CookieSessionStorageData>({
+export const { getSession, commitSession, destroySession } = createCookieSessionStorage<CookieSessionStorageData>({
   cookie: {
     name: "abyss_session",
     path: "/",
@@ -51,7 +50,7 @@ export const AuthService: AuthService = {
     const code = generateVerificationCode(VERIFICATION_CODE_LENGTH);
     const hash = await hashVerificationCode(code);
     const key = buildCacheKey(userId);
-    await Cache.put(key, hash, { expire: minutes(VERIFICATION_CODE_EXPIRY_MINUTES) });
+    await Cache.set(key, hash, { expire: minutes(VERIFICATION_CODE_EXPIRY_MINUTES) });
 
     await NotifyService.sendAuthRequestMessage(userId, code);
   },
@@ -80,24 +79,6 @@ export const AuthService: AuthService = {
       await SessionService.delete(sessionToken);
     }
     return await destroySession(session);
-  },
-
-  async fetchCurrentUser(request) {
-    const session = await getSession(request.headers.get("Cookie"));
-    const sessionToken = session.get("sessionToken");
-    if (!sessionToken) {
-      throw new AuthError(AuthError.Unauthenticated, "unauthenticated");
-    }
-
-    const user = await SessionService.validate(sessionToken);
-    if (!user) {
-      logger.warn({ sessionToken }, "fetch current user failed: invalid token");
-      throw new AuthError(AuthError.InvalidToken, "invalid token");
-    }
-
-    const renewedUserToken = await SessionService.renew(sessionToken);
-    session.set("sessionToken", renewedUserToken);
-    return [user, await commitSession(session)];
   },
 };
 
