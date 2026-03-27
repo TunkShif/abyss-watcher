@@ -60,7 +60,7 @@ export const GroupService: GroupService = {
         })
         .from(groupsUsers)
         .innerJoin(playersUsers, eq(groupsUsers.userId, playersUsers.userId))
-        .where(eq(groupsUsers.groupId, groupId))
+        .where(eq(groupsUsers.groupId, groupId.toString()))
         .all(),
     ]);
 
@@ -90,8 +90,8 @@ export const GroupService: GroupService = {
     // The global Steam binding in players_users is preserved so the user
     // can still be tracked if added to another group.
     await db.delete(groupsUsers).where(and(
-      eq(groupsUsers.userId, userId),
-      eq(groupsUsers.groupId, groupId),
+      eq(groupsUsers.userId, userId.toString()),
+      eq(groupsUsers.groupId, groupId.toString()),
     ));
   },
 };

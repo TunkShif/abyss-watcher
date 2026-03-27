@@ -1,6 +1,7 @@
 import { Cache } from "~/lib/cache";
 import { SteamAPI } from "~/lib/clients/steam";
 import { db } from "~/lib/database";
+import { playersUsers } from "~/lib/database/schema";
 import { createLogger } from "~/lib/logging";
 import { type Player, type PlayerSummary, PlayerSummarySchema } from "~/lib/modules/player/models";
 import { hours } from "~/lib/utils/duration";
