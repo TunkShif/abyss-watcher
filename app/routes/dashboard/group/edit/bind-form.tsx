@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type FC } from "react";
 import { useFetcher, Form } from "react-router";
 import { Search, UserPlus } from "lucide-react";
 import { SteamPreviewCard } from "~/components/steam-preview-card";
+import { avatarUrl } from "~/lib/utils/avatar";
 import type { GroupMemberInfo } from "~/lib/clients/onebot/models";
 import type { PlayerSummary } from "~/lib/modules/player/models";
 
@@ -88,7 +89,10 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
     <div className="space-y-6">
       {/* Member Select — Combobox */}
       <div>
-        <label htmlFor="qq-user-combobox" className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">
+        <label
+          htmlFor="qq-user-combobox"
+          className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider"
+        >
           Select QQ User
         </label>
         <div className="relative">
@@ -112,9 +116,14 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
           {/* Selected member badge */}
           {selectedMember && !dropdownOpen && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-              <span className="text-neon-blue text-sm">
-                {selectedMember.card || selectedMember.nickname}
-              </span>
+              <div className="w-6 h-6 rounded-full bg-slate-600 overflow-hidden">
+                <img
+                  src={avatarUrl("user", selectedMember.user_id, 40)}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="text-neon-blue text-sm">{selectedMember.card || selectedMember.nickname}</span>
               <button
                 type="button"
                 onClick={() => setSelectedUserId("")}
@@ -139,18 +148,17 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
                     key={member.user_id}
                     type="button"
                     onClick={() => selectMember(member.user_id.toString())}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      index === focusedIndex
-                        ? "bg-abyss-700 text-white"
-                        : "text-slate-300 hover:bg-abyss-800"
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                      index === focusedIndex ? "bg-abyss-700 text-white" : "text-slate-300 hover:bg-abyss-800"
                     }`}
                   >
-                    <span className="font-medium">
-                      {member.card || member.nickname}
+                    <div className="w-7 h-7 rounded-full bg-slate-600 overflow-hidden flex-shrink-0">
+                      <img src={avatarUrl("user", member.user_id, 40)} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="flex-1 min-w-0">
+                      <span className="text-left font-medium truncate block">{member.card || member.nickname}</span>
                     </span>
-                    <span className="ml-2 text-slate-500 font-mono text-xs">
-                      ID: {member.user_id}
-                    </span>
+                    <span className="text-slate-500 font-mono text-xs flex-shrink-0">{member.user_id}</span>
                   </button>
                 ))
               )}
@@ -166,7 +174,10 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
 
       {/* Steam ID Input */}
       <div>
-        <label htmlFor="steam-id-input" className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">
+        <label
+          htmlFor="steam-id-input"
+          className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider"
+        >
           Steam ID (64-bit)
         </label>
         <input
