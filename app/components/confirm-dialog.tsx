@@ -50,9 +50,7 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
             type="button"
             onClick={onConfirm}
             className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${
-              destructive
-                ? "bg-red-600 hover:bg-red-500 text-white"
-                : "bg-neon-blue hover:bg-neon-blue/80 text-white"
+              destructive ? "bg-red-600 hover:bg-red-500 text-white" : "bg-neon-blue hover:bg-neon-blue/80 text-white"
             }`}
           >
             {confirmLabel}

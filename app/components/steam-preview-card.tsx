@@ -29,9 +29,7 @@ export const SteamPreviewCard: FC<SteamPreviewCardProps> = ({ summary }) => {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="font-bold text-slate-100 truncate">{summary.name}</div>
-          <div className="text-xs text-slate-500 font-mono mt-0.5">
-            ID: {summary.playerId}
-          </div>
+          <div className="text-xs text-slate-500 font-mono mt-0.5">ID: {summary.playerId}</div>
           <div className="mt-1.5">
             {isInGame ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-neon-green bg-neon-green/10 border border-neon-green/30 px-2 py-0.5 rounded-full">

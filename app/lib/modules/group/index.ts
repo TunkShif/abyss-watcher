@@ -68,9 +68,7 @@ export const GroupService: GroupService = {
 
     // Fetch steam summaries for bound players
     const playerIds = boundRecords.map((r) => r.playerId);
-    const summaries = playerIds.length > 0
-      ? await PlayerService.fetchLatestSummaries(playerIds)
-      : [];
+    const summaries = playerIds.length > 0 ? await PlayerService.fetchLatestSummaries(playerIds) : [];
     const summaryMap = new Map(summaries.map((s) => [s.playerId, s]));
 
     return boundRecords.map((r) => {
@@ -88,19 +86,21 @@ export const GroupService: GroupService = {
   async bindPlayerToGroup(userId: UserId, groupId: GroupId): Promise<void> {
     // Add user to group's tracking: insert into groups_users.
     // This associates the user with this group for tracking purposes.
-    await db.insert(groupsUsers).values({
-      userId: userId.toString(),
-      groupId: groupId.toString(),
-    }).onConflictDoNothing();
+    await db
+      .insert(groupsUsers)
+      .values({
+        userId: userId.toString(),
+        groupId: groupId.toString(),
+      })
+      .onConflictDoNothing();
   },
 
   async unbindPlayerFromGroup(userId: UserId, groupId: GroupId): Promise<void> {
     // Remove user from group's tracking: delete from groups_users only.
     // The global Steam binding in players_users is preserved so the user
     // can still be tracked if added to another group.
-    await db.delete(groupsUsers).where(and(
-      eq(groupsUsers.userId, userId.toString()),
-      eq(groupsUsers.groupId, groupId.toString()),
-    ));
+    await db
+      .delete(groupsUsers)
+      .where(and(eq(groupsUsers.userId, userId.toString()), eq(groupsUsers.groupId, groupId.toString())));
   },
 };

@@ -9,7 +9,7 @@ import { Tracker } from "~/lib/modules/tracker";
 
 export const streamTimeout = 5_000;
 
-Tracker.start();
+// Tracker.start();
 
 export default function handleRequest(
   request: Request,

@@ -10,11 +10,7 @@ export const SlideOverPanel: FC<PropsWithChildren<SlideOverPanelProps>> = ({ tit
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" onClick={onClose} aria-hidden="true" />
 
       {/* Panel */}
       <div className="fixed inset-y-0 right-0 w-[480px] max-w-full bg-abyss-900 border-l border-white/5 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
@@ -31,9 +27,7 @@ export const SlideOverPanel: FC<PropsWithChildren<SlideOverPanelProps>> = ({ tit
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
     </>
   );

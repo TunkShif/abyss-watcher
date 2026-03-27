@@ -124,9 +124,7 @@ export default function GroupEditRoute({ loaderData }: Route.ComponentProps) {
           type="button"
           onClick={() => setActiveTab("bind")}
           className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === "bind"
-              ? "text-neon-blue border-b-2 border-neon-blue"
-              : "text-slate-500 hover:text-slate-300"
+            activeTab === "bind" ? "text-neon-blue border-b-2 border-neon-blue" : "text-slate-500 hover:text-slate-300"
           }`}
         >
           Bind Player
@@ -136,16 +134,9 @@ export default function GroupEditRoute({ loaderData }: Route.ComponentProps) {
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === "members" ? (
-          <MemberListTab
-            boundUsers={boundUsers}
-            unboundMembers={unboundMembers}
-            groupId={group.groupId}
-          />
+          <MemberListTab boundUsers={boundUsers} unboundMembers={unboundMembers} groupId={group.groupId} />
         ) : (
-          <BindFormTab
-            unboundMembers={unboundMembers}
-            groupId={group.groupId}
-          />
+          <BindFormTab unboundMembers={unboundMembers} groupId={group.groupId} />
         )}
       </div>
     </SlideOverPanel>

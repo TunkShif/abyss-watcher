@@ -26,10 +26,7 @@ export const PlayerService: PlayerService = {
     });
   },
   async bind(userId: string, playerId: string) {
-    await db
-      .insert(playersUsers)
-      .values({ userId, playerId })
-      .onConflictDoNothing();
+    await db.insert(playersUsers).values({ userId, playerId }).onConflictDoNothing();
   },
   // TODO: maybe need to do batch querying when palyer count exceeds 100
   async fetchLatestSummaries(playerIds: string[]) {
