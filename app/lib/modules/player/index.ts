@@ -10,6 +10,7 @@ export interface PlayerService {
   fetchLatestSummaries(playerIds: string[]): Promise<PlayerSummary[]>;
   fetchLocalSummaries(playerIds: string[]): Promise<(PlayerSummary | null)[]>;
   storeLocalSummaries(summaries: PlayerSummary[]): Promise<void>;
+  bind(userId: string, playerId: string): Promise<void>;
 }
 
 const logger = createLogger("service.player");
@@ -22,6 +23,12 @@ export const PlayerService: PlayerService = {
         playerId: true,
       },
     });
+  },
+  async bind(userId: string, playerId: string) {
+    await db
+      .insert(playersUsers)
+      .values({ userId, playerId })
+      .onConflictDoNothing();
   },
   // TODO: maybe need to do batch querying when palyer count exceeds 100
   async fetchLatestSummaries(playerIds: string[]) {
