@@ -1,162 +1,216 @@
-# Player Binding Management Feature — Design
+# Player Binding Management — Route Architecture Refactor
 
 **Date:** 2026-03-27
 **Status:** Approved
+**Replaces:** `2026-03-27-player-binding-management-design.md` (superseded by this refactor)
 
 ## Overview
 
-Add the ability for admin users to manage Steam player bindings from the dashboard. Each group has a cog icon that opens a slide-over panel where admins can bind QQ group members to Steam IDs and view/remove existing bindings.
+Fix the incorrect route architecture from the original player binding management implementation. The original design placed `GroupEditPanel` in `layout.tsx` and used `useRouteLoaderData` to fetch loader data client-side, causing a "Loading..." flash. This refactor moves the panel into the edit route's component where it belongs, uses loader data as component props (SSR-first), and uses `Form` + `redirect` for the bind action.
+
+---
+
+## Problems Fixed
+
+1. **Panel in wrong place** — `GroupEditPanel` lived in `layout.tsx`, should be in the edit route component
+2. **Client-side fetch pattern** — `useRouteLoaderData` on a route with no component fetched data client-side after render
+3. **Wrong submit pattern** — `useFetcher.submit` for bind action instead of `Form` + `redirect`
+4. **File organization** — components nested in `components/` subfolder inside the route folder; `group-edit-panel.tsx` lived in `app/components/` instead of the edit route
 
 ---
 
 ## Route Structure
 
 ```
-/dashboard                              → dashboard/route.tsx
-/dashboard/group/:groupId/edit          → dashboard/group/edit/route.tsx
+layout.tsx
+└── <Outlet />                           (renders dashboard OR edit route)
+
+dashboard/route.tsx
+└── Dashboard component                   (unchanged)
+
+dashboard/group/:groupId/edit/route.tsx   ← NEW: has default component
+└── GroupEditPanel (merged into route.tsx)
+    ├── MemberListTab
+    └── BindFormTab
 ```
 
-### Routes Config Change (`app/routes.ts`)
-
-Add a new route alongside the dashboard layout route:
-
-```typescript
-route("dashboard/group/:groupId/edit", "routes/dashboard/group/edit/route.tsx")
-```
-
-The dashboard layout (`routes/layout.tsx`) renders both the dashboard content (`<Outlet />`) and the slide-over panel when the `groupId` param is present. This means the panel overlays the dashboard without unmounting it.
+The panel is rendered by the edit route's default component, not by the layout. Data flows from loader → component props (SSR), not via `useRouteLoaderData`.
 
 ---
 
-## Slide-Over Panel
+## File Organization
 
-**Dimensions:** Width ~480px, full viewport height, slides in from right.
+**Before:**
+```
+app/
+  components/
+    slide-over-panel.tsx
+    confirm-dialog.tsx
+    group-edit-panel.tsx              ← route-specific, should not be here
+  routes/
+    dashboard/
+      route.tsx
+      group/
+        edit/
+          route.tsx                  (loader + action only, no component)
+          components/
+            member-list.tsx          (nested one level too deep)
+            bind-form.tsx            (nested one level too deep)
+```
 
-**Header:** Shows group name and close button.
+**After:**
+```
+app/
+  components/
+    slide-over-panel.tsx              (reusable)
+    confirm-dialog.tsx                 (reusable)
+  routes/
+    dashboard/
+      route.tsx
+      group/
+        edit/
+          route.tsx                  (loader + action + panel component)
+          member-list.tsx            (moved up)
+          bind-form.tsx              (moved up)
+```
 
-**Tabs:**
-- **Members** — List of all group QQ members with their current bind status
-- **Bind Player** — Form to search/select a QQ member and enter a Steam ID
-
-**Panel state is URL-driven** — navigating to `/dashboard/group/:groupId/edit` opens the panel. Navigating away (back button, close button, or outside click) closes it. This makes the panel state shareable and back-button friendly.
+Deleted: `app/routes/dashboard/group/edit/components/` folder
 
 ---
 
-## Edit Route Loader
+## `route.tsx` Exports
 
-**Route:** `app/routes/dashboard/group/edit/route.tsx`
-
-**Loads:**
-1. Group info (name, member count) — from `GroupService.listGroups()`
-2. Group QQ members — from `GroupService.listMembers(groupId)` (OneBot API)
-3. Bound users for this group — from DB join of `players_users` + `groups_users`
-4. Current user's admin permission for this group — via `UserService.isGroupAdmin(userId, groupId)`
-
-**Permission check:** If current user is not admin of the group, throw a 403 response.
-
-**Returns:**
 ```typescript
-{
-  group: { groupId, groupName, memberCount },
-  members: GroupMemberInfo[],          // All QQ group members from OneBot
-  boundUsers: BoundUser[],            // Those with Steam bindings
-  unboundMembers: GroupMemberInfo[],  // Members without bindings
+// 1. loader — unchanged from current implementation
+export async function loader({ params, context }: Route.LoaderArgs) {
+  // Returns: { group, boundUsers, unboundMembers }
+}
+
+// 2. action — unchanged except bind returns redirect()
+export async function action({ request, params, context }: Route.ActionArgs) {
+  if (parsed.intent === "bind") {
+    await PlayerService.bind(parsed.userId, parsed.steamId);
+    await GroupService.bindPlayerToGroup(parsed.userId, groupId);
+    return redirect("/dashboard");  // ← Not { success: true }
+  }
+  // lookup: returns { preview, intent }
+  // unbind: returns { success: true, intent }
+}
+
+// 3. default component — the entire panel rendered here
+export default function GroupEditRoute({ loaderData }: Route.ComponentProps) {
+  return (
+    <SlideOverPanel title={loaderData.group.groupName} onClose={() => navigate("/dashboard")}>
+      <Tabs>
+        <MemberListTab ... />
+        <BindFormTab ... />
+      </Tabs>
+    </SlideOverPanel>
+  );
 }
 ```
 
 ---
 
-## Edit Route Action
+## Data Flow
 
-Three intents handled by a single action function:
-
-### `lookup` Intent
-- **Input:** `steamId` (string)
-- **Process:** Calls `PlayerService.fetchLatestSummaries([steamId])`
-- **Result:** Returns Steam player preview (avatar, name, online state) or error if not found
-- **No DB write**
-
-### `bind` Intent
-- **Input:** `userId` (QQ user ID), `steamId` (string)
-- **Process:**
-  1. Verify Steam ID exists via `PlayerService.fetchLatestSummaries([steamId])`
-  2. Insert into `players_users` table
-  3. Insert into `groups_users` table if not already present
-- **Result:** Success or error message
-- **Validation:** Prevent duplicate bindings for same `userId`
-
-### `unbind` Intent
-- **Input:** `userId` (string)
-- **Process:** Delete from `players_users` table (the binding only, not the group membership)
-- **Result:** Success or error message
+| Operation | Pattern | Why |
+|-----------|---------|-----|
+| Initial load | Loader → `loaderData` prop (SSR) | No client fetch, data available on first render |
+| `lookup` intent | `useFetcher.submit` | No navigation needed, reads from `fetcher.data` |
+| `bind` intent | `<Form>` + `redirect("/dashboard")` | Success requires navigation to dashboard |
+| `unbind` intent | `useFetcher.submit` | No navigation needed, updates list in-place |
 
 ---
 
-## Permission Flow
+## `BindFormTab` Changes
 
-1. Dashboard loader returns `groupsPerms` — a map of `groupId → boolean` indicating if current user is admin
-2. In `GroupCard`, the cog button is disabled if `!groupsPerms[groupId]`
-3. If user clicks enabled cog → navigate to `/dashboard/group/:groupId/edit`
-4. Edit route loader **re-checks** `isGroupAdmin` (defense in depth) and throws 403 if not admin
+**Before:**
+```typescript
+const bindFetcher = useFetcher();
+const handleBind = () => {
+  bindFetcher.submit({ intent: "bind", userId, steamId }, { action: `/dashboard/group/${groupId}/edit` });
+};
+useEffect(() => {
+  if (bindFetcher.data?.success) onClose();
+}, [bindFetcher.data]);
+```
 
----
+**After:**
+```typescript
+// No bindFetcher needed
+// onClose is still passed as prop but NOT called imperatively after bind
+// Instead: action returns redirect("/dashboard") and React Router navigates
 
-## UI Components
-
-### `SlideOverPanel`
-Right-side drawer component. Renders in the dashboard layout when `groupId` param exists. Uses React Router `useParams` to know which group is open. CSS: `fixed inset-y-0 right-0 w-[480px] bg-abyss-900 border-l border-white/5 shadow-2xl z-50`.
-
-### `MemberList` (Members Tab)
-- Shows all group members, split into "Bound" and "Not Bound" sections
-- Each bound user shows: QQ nickname/card, Steam name, avatar, unbind button
-- Each unbound user shows: QQ nickname/card, "Not Bound" label
-- Unbind button triggers a `ConfirmDialog`
-
-### `BindForm` (Bind Player Tab)
-- **Step 1:** Searchable select dropdown of unbound group members
-- **Step 2:** Text input for Steam ID (with validation format)
-- **Step 3:** "Preview" button → calls `lookup` action → shows `SteamPreviewCard`
-- **Step 4:** "Bind" button → calls `bind` action → on success, refresh member list
-
-### `SteamPreviewCard`
-Displays after successful lookup:
-- Avatar image
-- Steam persona name
-- Online state badge (Online/Offline/In-Game)
-- Current game name if playing
-
-### `ConfirmDialog`
-Simple confirmation for unbinding:
-- "Are you sure you want to unbind [SteamName] from [QQNickname]?"
-- Cancel / Confirm buttons
-- Confirm triggers `unbind` action
+const lookupFetcher = useFetcher({ key: "lookup" });
+const handlePreview = () => {
+  lookupFetcher.submit({ intent: "lookup", steamId }, { method: "post", action: `/dashboard/group/${groupId}/edit` });
+};
+```
 
 ---
 
-## Existing Code Integration
+## `MemberListTab` Changes
 
-- **`app/routes/dashboard/route.tsx`** — Already has `groupsPerms` logic; cog button already exists (needs `disabled` check and `onClick` navigation)
-- **`app/lib/modules/group/index.ts`** — Already has `listMembers()` and `listPlayerGroupIds()`
-- **`app/lib/modules/user/index.ts`** — Already has `isGroupAdmin()`
-- **`app/lib/modules/player/index.ts`** — Already has `fetchLatestSummaries()`
-- **`app/lib/database/schema.ts`** — `players_users` and `groups_users` tables already exist
+**Before:**
+```typescript
+const unbindFetcher = useFetcher();
+```
 
----
-
-## New Files to Create
-
-1. `app/routes/dashboard/group/edit/route.tsx` — Edit route with loader/action
-2. `app/components/slide-over-panel.tsx` — Reusable slide-over component (if extracted)
-3. `app/components/steam-preview-card.tsx` — Steam info preview component
-4. `app/components/confirm-dialog.tsx` — Confirmation dialog component
-5. `app/routes/dashboard/group/edit/components/member-list.tsx` — Member list tab
-6. `app/routes/dashboard/group/edit/components/bind-form.tsx` — Bind player tab
+**After:** No change — `unbind` correctly uses `useFetcher` since it doesn't navigate.
 
 ---
 
-## Conventions
+## `layout.tsx` Changes
 
-- Prefer React Router `Form` / `useFetcher` conventions over client-side fetch
-- All data mutations go through route actions
-- Use existing TailwindCSS utility classes and theme (dark cyberpunk style)
-- UI components live close to their route (`routes/dashboard/group/edit/components/`)
+Remove the panel rendering and `params.groupId` check:
+
+```typescript
+// BEFORE (with panel in layout)
+export default function Layout({ loaderData }: Route.ComponentProps) {
+  const params = useParams();
+  const showEditPanel = Boolean(params.groupId);
+  return (
+    <div>
+      <Outlet />
+      {showEditPanel && <GroupEditPanel onClose={() => navigate("/dashboard")} />}
+    </div>
+  );
+}
+
+// AFTER (layout just renders outlet)
+export default function Layout({ loaderData }: Route.ComponentProps) {
+  return (
+    <div>
+      <NavBar user={loaderData.user} />
+      <main>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+```
+
+---
+
+## Error Handling
+
+- **Loader 403/404** — `throw data(..., { status: 403/404 })` → React Router error boundary
+- **Action validation errors** — `{ error: string, intent }` returned, displayed inline
+- **lookup not found** — `{ error: "...", intent: "lookup" }` returned
+- **bind/unbind success** — bind returns `redirect("/dashboard")`, unbind returns `{ success: true, intent: "unbind" }`
+
+No new error handling infrastructure needed — existing patterns are preserved.
+
+---
+
+## Implementation Steps
+
+1. Move `member-list.tsx` and `bind-form.tsx` up from `components/` subfolder
+2. Merge `group-edit-panel.tsx` contents into `route.tsx` as the default export
+3. Delete `app/routes/dashboard/group/edit/components/` folder
+4. Remove `GroupEditPanel` import and panel rendering from `layout.tsx`
+5. Remove `useRouteLoaderData` and `params`/`navigate`/`showEditPanel` from `layout.tsx`
+6. Change `BindFormTab` — remove `useFetcher` for bind, use `Form` component
+7. Change action — `bind` intent returns `redirect("/dashboard")` instead of `{ success: true }`
+8. Delete `app/components/group-edit-panel.tsx`
