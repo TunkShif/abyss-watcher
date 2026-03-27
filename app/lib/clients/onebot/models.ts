@@ -46,22 +46,9 @@ export const GroupMemberInfoSchema = v.object({
   group_id: v.number(),
   user_id: v.number(),
   nickname: v.string(),
-  card: v.string(),
   sex: v.enum(UserSex),
-  age: v.number(),
-  area: v.string(),
-  level: v.union([v.string(), v.number()]),
-  qq_level: v.number(),
-  join_time: v.number(),
-  last_sent_time: v.number(),
-  title_expire_time: v.number(),
-  unfriendly: v.boolean(),
-  card_changeable: v.boolean(),
-  is_robot: v.boolean(),
-  shut_up_timestamp: v.number(),
   role: v.enum(GroupMemberRole),
-  title: v.string(),
-  qage: v.optional(v.string()),
+  card: v.optional(v.string()),
 });
 
 export type GroupMemberInfo = v.InferOutput<typeof GroupMemberInfoSchema>;
