@@ -26,7 +26,12 @@ export const ConfirmDialog: FC<ConfirmDialogProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-pointer border-none p-0"
+        onClick={onCancel}
+        aria-label="Close dialog"
+      />
 
       {/* Dialog */}
       <div className="relative bg-abyss-900 border border-white/10 rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 duration-200">

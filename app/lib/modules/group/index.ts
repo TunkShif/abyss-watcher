@@ -4,7 +4,6 @@ import { OneBot } from "~/lib/clients/onebot";
 import type { Group, GroupId, GroupMemberInfo, UserId } from "~/lib/clients/onebot/models";
 import { db } from "~/lib/database";
 import { groupsUsers, playersUsers } from "~/lib/database/schema";
-import { createLogger } from "~/lib/logging";
 import { PlayerService } from "~/lib/modules/player";
 import type { BoundUser } from "~/lib/modules/group/models";
 
@@ -25,6 +24,7 @@ export interface GroupService {
   listMembers(groupId: GroupId): Promise<GroupMemberInfo[]>;
   listPlayerGroupIds(playerIds: string[]): Promise<Record<string, string[]>>;
   listBoundUsersForGroup(groupId: GroupId): Promise<BoundUser[]>;
+  bindPlayerToGroup(userId: UserId, groupId: GroupId): Promise<void>;
   unbindPlayerFromGroup(userId: UserId, groupId: GroupId): Promise<void>;
 }
 
@@ -83,6 +83,15 @@ export const GroupService: GroupService = {
         avatarUrl: summary?.avatarUrl,
       };
     });
+  },
+
+  async bindPlayerToGroup(userId: UserId, groupId: GroupId): Promise<void> {
+    // Add user to group's tracking: insert into groups_users.
+    // This associates the user with this group for tracking purposes.
+    await db.insert(groupsUsers).values({
+      userId: userId.toString(),
+      groupId: groupId.toString(),
+    }).onConflictDoNothing();
   },
 
   async unbindPlayerFromGroup(userId: UserId, groupId: GroupId): Promise<void> {

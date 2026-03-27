@@ -1,6 +1,6 @@
 import { LinkIcon, Settings } from "lucide-react";
 import { type FC, Suspense } from "react";
-import { Await } from "react-router";
+import { Await, href, useNavigate } from "react-router";
 import { SteamPersonaState } from "~/lib/clients/steam/models";
 import { userContext } from "~/lib/modules/auth/context";
 import { GroupService } from "~/lib/modules/group";
@@ -155,6 +155,7 @@ const GroupCard: FC<{ userId: string; group: GroupWithPlayers; groupsPerms: Prom
   group,
   groupsPerms,
 }) => {
+  const navigate = useNavigate();
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-baseline gap-4 mb-4 border-b border-white/5 pb-2">
@@ -178,6 +179,7 @@ const GroupCard: FC<{ userId: string; group: GroupWithPlayers; groupsPerms: Prom
                   <button
                     disabled={!canManage}
                     type="button"
+                    onClick={() => navigate(href("/dashboard/group/:groupId/edit", { groupId: group.groupId }))}
                     className={`p-1.5 rounded-md transition-all ${
                       canManage
                         ? "text-slate-500 hover:text-neon-blue hover:bg-neon-blue/10"

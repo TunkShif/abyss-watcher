@@ -4,6 +4,7 @@ export interface BoundUser {
   userId: UserId;
   playerId: string;
   userName: string;
+  avatarUrl?: string;
 }
 
 export interface GroupWithBoundUsers {
