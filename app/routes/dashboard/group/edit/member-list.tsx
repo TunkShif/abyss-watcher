@@ -1,17 +1,16 @@
 import { useState, type FC } from "react";
 import { useFetcher } from "react-router";
 import { ConfirmDialog } from "~/components/confirm-dialog";
-import type { Route } from "../+types/route";
-
-type EditRouteData = Route.ComponentProps;
+import type { BoundUser } from "~/lib/modules/group/models";
+import type { GroupMemberInfo } from "~/lib/clients/onebot/models";
 
 interface MemberListTabProps {
-  data: EditRouteData;
+  boundUsers: BoundUser[];
+  unboundMembers: GroupMemberInfo[];
   groupId: string;
 }
 
-export const MemberListTab: FC<MemberListTabProps> = ({ data, groupId }) => {
-  const { boundUsers, unboundMembers } = data;
+export const MemberListTab: FC<MemberListTabProps> = ({ boundUsers, unboundMembers, groupId }) => {
   const [confirmUnbind, setConfirmUnbind] = useState<{ userId: string; userName: string } | null>(null);
   const unbindFetcher = useFetcher();
 
@@ -23,7 +22,7 @@ export const MemberListTab: FC<MemberListTabProps> = ({ data, groupId }) => {
     if (!confirmUnbind) return;
     unbindFetcher.submit(
       { intent: "unbind", userId: confirmUnbind.userId, groupId },
-      { method: "post" },
+      { method: "post", action: `/dashboard/group/${groupId}/edit` },
     );
     setConfirmUnbind(null);
   };
@@ -39,7 +38,7 @@ export const MemberListTab: FC<MemberListTabProps> = ({ data, groupId }) => {
           <p className="text-slate-600 text-sm py-4 text-center">No players bound yet.</p>
         ) : (
           <div className="space-y-2">
-            {boundUsers.map((user) => (
+            {boundUsers.map((user: BoundUser) => (
               <div
                 key={user.userId}
                 className="flex items-center gap-3 bg-abyss-800/50 border border-white/5 rounded-lg p-3"
@@ -62,7 +61,7 @@ export const MemberListTab: FC<MemberListTabProps> = ({ data, groupId }) => {
                 {/* Unbind button */}
                 <button
                   type="button"
-                  onClick={() => handleUnbind(user.userId, user.userName)}
+                  onClick={() => handleUnbind(user.userId.toString(), user.userName)}
                   className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded transition-colors"
                 >
                   Unbind
