@@ -1,6 +1,6 @@
 import { Bell, LayoutDashboard, LogOut, Search, Settings, Users, Zap } from "lucide-react";
 import type { FC } from "react";
-import { Form, href, Link, NavLink, Outlet } from "react-router";
+import { href, Link, NavLink, Outlet } from "react-router";
 import type { User } from "~/lib/clients/onebot/models";
 import { userContext } from "~/lib/modules/auth/context";
 import { authMiddleware } from "~/lib/modules/auth/middleware";
