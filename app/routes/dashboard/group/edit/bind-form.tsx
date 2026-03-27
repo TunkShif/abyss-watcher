@@ -88,13 +88,14 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
     <div className="space-y-6">
       {/* Member Select — Combobox */}
       <div>
-        <label className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">
+        <label htmlFor="qq-user-combobox" className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">
           Select QQ User
         </label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
           <input
             ref={inputRef}
+            id="qq-user-combobox"
             type="text"
             value={memberSearch}
             onChange={(e) => {
