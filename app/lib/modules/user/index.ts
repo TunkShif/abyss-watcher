@@ -23,7 +23,12 @@ export const UserService: UserService = {
     return user;
   },
   async isGroupAdmin(userId, groupId) {
-    const member = await OneBot.getGroupMemberInfo(groupId, userId);
-    return member?.role === GroupMemberRole.Owner || member?.role === GroupMemberRole.Admin;
+    try {
+      const member = await OneBot.getGroupMemberInfo(groupId, userId);
+      return member?.role === GroupMemberRole.Owner || member?.role === GroupMemberRole.Admin;
+    } catch (err) {
+      logger.warn({ err }, "error when getting user role");
+      return false;
+    }
   },
 };
