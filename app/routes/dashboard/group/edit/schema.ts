@@ -21,7 +21,7 @@ export const UnbindSchema = v.object({
 });
 
 // Discriminated union for all intents
-export const ActionSchema = v.discriminatedUnion("intent", [LookupSchema, BindSchema, UnbindSchema]);
+export const ActionSchema = v.variant("intent", [LookupSchema, BindSchema, UnbindSchema]);
 
 export type LookupInput = v.InferOutput<typeof LookupSchema>;
 export type BindInput = v.InferOutput<typeof BindSchema>;
