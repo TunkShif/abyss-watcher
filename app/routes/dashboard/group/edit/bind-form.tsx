@@ -1,4 +1,4 @@
-import { useState, useEffect, type FC } from "react";
+import { useState, useRef, useEffect, type FC } from "react";
 import { useFetcher, Form } from "react-router";
 import { Search, UserPlus } from "lucide-react";
 import { SteamPreviewCard } from "~/components/steam-preview-card";
@@ -11,56 +11,150 @@ interface BindFormTabProps {
 }
 
 export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) => {
+  const [memberSearch, setMemberSearch] = useState<string>("");
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [steamId, setSteamId] = useState<string>("");
-  const [previewData, setPreviewData] = useState<PlayerSummary | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const lookupFetcher = useFetcher();
-
   const lookupResult = lookupFetcher.data as { preview?: PlayerSummary; error?: string } | undefined;
 
-  // Sync preview when lookup succeeds
-  useEffect(() => {
-    if (lookupResult?.preview) {
-      setPreviewData(lookupResult.preview);
-    }
-  }, [lookupResult]);
+  const filteredMembers = memberSearch.trim()
+    ? unboundMembers.filter(
+        (m) =>
+          (m.card || m.nickname).toLowerCase().includes(memberSearch.toLowerCase()) ||
+          m.user_id.toString().includes(memberSearch),
+      )
+    : unboundMembers;
 
   const selectedMember = unboundMembers.find((m) => m.user_id.toString() === selectedUserId);
+  const preview = lookupResult?.preview;
 
   const handlePreview = () => {
     if (!steamId.trim()) return;
-    setPreviewData(null);
     lookupFetcher.submit(
       { intent: "lookup", steamId: steamId.trim() },
       { method: "post", action: `/dashboard/group/${groupId}/edit` },
     );
   };
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectMember = (userId: string) => {
+    setSelectedUserId(userId);
+    setMemberSearch("");
+    setDropdownOpen(false);
+    setFocusedIndex(-1);
+    inputRef.current?.blur();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!dropdownOpen) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((i) => Math.min(i + 1, filteredMembers.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && focusedIndex >= 0) {
+      e.preventDefault();
+      selectMember(filteredMembers[focusedIndex].user_id.toString());
+    } else if (e.key === "Escape") {
+      setDropdownOpen(false);
+      setFocusedIndex(-1);
+    }
+  };
+
   const isLookingUp = lookupFetcher.state !== "idle";
 
   return (
     <div className="space-y-6">
-      {/* Member Select */}
+      {/* Member Select — Combobox */}
       <div>
-        <label htmlFor="qq-user-select" className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">
+        <label className="block text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">
           Select QQ User
         </label>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <select
-            id="qq-user-select"
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            className="w-full bg-abyss-950 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-slate-200 focus:outline-none focus:border-neon-blue transition-colors appearance-none"
-          >
-            <option value="">Search and select a group member...</option>
-            {unboundMembers.map((member) => (
-              <option key={member.user_id} value={member.user_id.toString()}>
-                {member.card || member.nickname} (ID: {member.user_id})
-              </option>
-            ))}
-          </select>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={memberSearch}
+            onChange={(e) => {
+              setMemberSearch(e.target.value);
+              setDropdownOpen(true);
+              setFocusedIndex(-1);
+            }}
+            onFocus={() => setDropdownOpen(true)}
+            onKeyDown={handleKeyDown}
+            placeholder="Search by name or ID..."
+            className="w-full bg-abyss-950 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-slate-200 focus:outline-none focus:border-neon-blue transition-colors"
+          />
+
+          {/* Selected member badge */}
+          {selectedMember && !dropdownOpen && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <span className="text-neon-blue text-sm">
+                {selectedMember.card || selectedMember.nickname}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedUserId("")}
+                className="text-slate-500 hover:text-white transition-colors"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+          {/* Dropdown */}
+          {dropdownOpen && (
+            <div
+              ref={dropdownRef}
+              className="absolute z-10 w-full mt-1 bg-abyss-900 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+            >
+              {filteredMembers.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-slate-500">No members found</div>
+              ) : (
+                filteredMembers.map((member, index) => (
+                  <button
+                    key={member.user_id}
+                    type="button"
+                    onClick={() => selectMember(member.user_id.toString())}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                      index === focusedIndex
+                        ? "bg-abyss-700 text-white"
+                        : "text-slate-300 hover:bg-abyss-800"
+                    }`}
+                  >
+                    <span className="font-medium">
+                      {member.card || member.nickname}
+                    </span>
+                    <span className="ml-2 text-slate-500 font-mono text-xs">
+                      ID: {member.user_id}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
         {selectedMember && (
           <p className="mt-2 text-sm text-slate-400">
@@ -78,10 +172,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
           id="steam-id-input"
           type="text"
           value={steamId}
-          onChange={(e) => {
-            setSteamId(e.target.value);
-            setPreviewData(null);
-          }}
+          onChange={(e) => setSteamId(e.target.value)}
           placeholder="e.g. 76561198012345678"
           className="w-full bg-abyss-950 border border-slate-700 rounded-lg py-2.5 px-4 text-slate-200 font-mono focus:outline-none focus:border-neon-blue transition-colors"
         />
@@ -90,14 +181,14 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
       {/* Error Messages */}
       {lookupResult?.error && (
         <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2">
-          {lookupResult?.error}
+          {lookupResult.error}
         </div>
       )}
 
       {/* Preview Card */}
-      {previewData ? (
+      {preview ? (
         <div className="space-y-4">
-          <SteamPreviewCard summary={previewData} />
+          <SteamPreviewCard summary={preview} />
           <button
             type="button"
             onClick={handlePreview}
@@ -122,7 +213,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
         method="post"
         action={`/dashboard/group/${groupId}/edit`}
         onSubmit={(e) => {
-          if (!selectedUserId || !steamId.trim() || !previewData) {
+          if (!selectedUserId || !steamId.trim() || !preview) {
             e.preventDefault();
           }
         }}
@@ -132,7 +223,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
         <input type="hidden" name="steamId" value={steamId} />
         <button
           type="submit"
-          disabled={!selectedUserId || !steamId.trim() || !previewData}
+          disabled={!selectedUserId || !steamId.trim() || !preview}
           className="w-full flex items-center justify-center gap-2 bg-neon-blue hover:bg-neon-blue/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
         >
           <UserPlus className="w-4 h-4" />
