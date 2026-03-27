@@ -110,12 +110,12 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
             onFocus={() => setDropdownOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder="Search by name or ID..."
-            className="w-full bg-abyss-950 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-slate-200 focus:outline-none focus:border-neon-blue transition-colors"
+            className="w-full bg-abyss-950 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-slate-200 focus:outline-none focus:border-neon-blue transition-colors duration-200"
           />
 
           {/* Selected member badge */}
           {selectedMember && !dropdownOpen && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
               <div className="w-6 h-6 rounded-full bg-slate-600 overflow-hidden">
                 <img
                   src={avatarUrl("user", selectedMember.user_id, 40)}
@@ -127,7 +127,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
               <button
                 type="button"
                 onClick={() => setSelectedUserId("")}
-                className="text-slate-500 hover:text-white transition-colors"
+                className="text-slate-500 hover:text-white transition-colors duration-200"
               >
                 ×
               </button>
@@ -138,7 +138,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
           {dropdownOpen && (
             <div
               ref={dropdownRef}
-              className="absolute z-10 w-full mt-1 bg-abyss-900 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+              className="absolute z-10 w-full mt-1 bg-abyss-900 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
             >
               {filteredMembers.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-slate-500">No members found</div>
@@ -148,7 +148,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
                     key={member.user_id}
                     type="button"
                     onClick={() => selectMember(member.user_id.toString())}
-                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors duration-150 ${
                       index === focusedIndex ? "bg-abyss-700 text-white" : "text-slate-300 hover:bg-abyss-800"
                     }`}
                   >
@@ -186,13 +186,13 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
           value={steamId}
           onChange={(e) => setSteamId(e.target.value)}
           placeholder="e.g. 76561198012345678"
-          className="w-full bg-abyss-950 border border-slate-700 rounded-lg py-2.5 px-4 text-slate-200 font-mono focus:outline-none focus:border-neon-blue transition-colors"
+          className="w-full bg-abyss-950 border border-slate-700 rounded-lg py-2.5 px-4 text-slate-200 font-mono focus:outline-none focus:border-neon-blue transition-colors duration-200"
         />
       </div>
 
       {/* Error Messages */}
       {lookupResult?.error && (
-        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2">
+        <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 animate-in fade-in duration-200">
           {lookupResult.error}
         </div>
       )}
@@ -205,7 +205,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
             type="button"
             onClick={handlePreview}
             disabled={isLookingUp || !steamId.trim()}
-            className="w-full text-sm text-slate-500 hover:text-slate-300 transition-colors"
+            className="w-full text-sm text-slate-500 hover:text-slate-300 transition-colors duration-200"
           >
             {isLookingUp ? "Checking..." : "Re-check Steam ID"}
           </button>
@@ -236,7 +236,7 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) =
         <button
           type="submit"
           disabled={!selectedUserId || !steamId.trim() || !preview}
-          className="w-full flex items-center justify-center gap-2 bg-neon-blue hover:bg-neon-blue/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-neon-blue hover:bg-neon-blue/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-all duration-200"
         >
           <UserPlus className="w-4 h-4" />
           Bind Player

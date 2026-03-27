@@ -41,7 +41,7 @@ export const MemberListTab: FC<MemberListTabProps> = ({ boundUsers, unboundMembe
             {boundUsers.map((user: BoundUser) => (
               <div
                 key={user.userId}
-                className="flex items-center gap-3 bg-abyss-800/50 border border-white/5 rounded-lg p-3"
+                className="flex items-center gap-3 bg-abyss-800/50 border border-white/5 rounded-lg p-3 hover:bg-abyss-800/70 transition-colors duration-200"
               >
                 {/* Avatar */}
                 <div className="w-10 h-10 rounded-full bg-slate-700 overflow-hidden flex-shrink-0">
@@ -62,7 +62,7 @@ export const MemberListTab: FC<MemberListTabProps> = ({ boundUsers, unboundMembe
                 <button
                   type="button"
                   onClick={() => handleUnbind(user.userId.toString(), user.userName)}
-                  className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded transition-colors"
+                  className="text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded transition-colors duration-200"
                 >
                   Unbind
                 </button>
@@ -84,7 +84,7 @@ export const MemberListTab: FC<MemberListTabProps> = ({ boundUsers, unboundMembe
             {unboundMembers.map((member) => (
               <div
                 key={member.user_id}
-                className="flex items-center gap-3 bg-abyss-800/30 border border-white/5 rounded-lg p-3 opacity-60"
+                className="flex items-center gap-3 bg-abyss-800/30 border border-white/5 rounded-lg p-3 opacity-60 hover:opacity-80 transition-opacity duration-200"
               >
                 <div className="w-10 h-10 rounded-full bg-slate-700 flex-shrink-0" />
                 <div className="flex-1 min-w-0">

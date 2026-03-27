@@ -132,7 +132,7 @@ export default function GroupEditRoute({ loaderData }: Route.ComponentProps) {
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="p-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
         {activeTab === "members" ? (
           <MemberListTab boundUsers={boundUsers} unboundMembers={unboundMembers} groupId={group.groupId} />
         ) : (
