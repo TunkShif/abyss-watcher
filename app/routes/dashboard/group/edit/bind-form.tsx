@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, type FC } from "react";
-import { useFetcher } from "react-router";
+import { useState, useEffect, type FC } from "react";
+import { useFetcher, Form } from "react-router";
 import { Search, UserPlus } from "lucide-react";
 import { SteamPreviewCard } from "~/components/steam-preview-card";
 import type { GroupMemberInfo } from "~/lib/clients/onebot/models";
@@ -8,20 +8,16 @@ import type { PlayerSummary } from "~/lib/modules/player/models";
 interface BindFormTabProps {
   unboundMembers: GroupMemberInfo[];
   groupId: string;
-  onClose?: () => void;
 }
 
-export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId, onClose }) => {
+export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId }) => {
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [steamId, setSteamId] = useState<string>("");
   const [previewData, setPreviewData] = useState<PlayerSummary | null>(null);
 
   const lookupFetcher = useFetcher();
-  const bindFetcher = useFetcher();
-  const bindSuccessHandled = useRef(false);
 
   const lookupResult = lookupFetcher.data as { preview?: PlayerSummary; error?: string } | undefined;
-  const bindResult = bindFetcher.data as { success?: boolean; error?: string } | undefined;
 
   // Sync preview when lookup succeeds
   useEffect(() => {
@@ -29,14 +25,6 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId, onC
       setPreviewData(lookupResult.preview);
     }
   }, [lookupResult]);
-
-  // Close panel when bind succeeds
-  useEffect(() => {
-    if (bindResult?.success && !bindSuccessHandled.current && onClose) {
-      bindSuccessHandled.current = true;
-      onClose();
-    }
-  }, [bindResult, onClose]);
 
   const selectedMember = unboundMembers.find((m) => m.user_id.toString() === selectedUserId);
 
@@ -49,15 +37,6 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId, onC
     );
   };
 
-  const handleBind = () => {
-    if (!selectedUserId || !steamId.trim()) return;
-    bindFetcher.submit(
-      { intent: "bind", userId: selectedUserId, steamId: steamId.trim() },
-      { method: "post", action: `/dashboard/group/${groupId}/edit` },
-    );
-  };
-
-  const isBinding = bindFetcher.state !== "idle";
   const isLookingUp = lookupFetcher.state !== "idle";
 
   return (
@@ -109,9 +88,9 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId, onC
       </div>
 
       {/* Error Messages */}
-      {(lookupResult?.error || bindResult?.error) && (
+      {lookupResult?.error && (
         <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2">
-          {lookupResult?.error || bindResult?.error}
+          {lookupResult?.error}
         </div>
       )}
 
@@ -138,23 +117,28 @@ export const BindFormTab: FC<BindFormTabProps> = ({ unboundMembers, groupId, onC
         </button>
       ) : null}
 
-      {/* Success Message */}
-      {bindResult?.success && (
-        <div className="text-neon-green text-sm bg-neon-green/10 border border-neon-green/30 rounded-lg px-4 py-2">
-          Player bound successfully!
-        </div>
-      )}
-
-      {/* Bind Button */}
-      <button
-        type="button"
-        onClick={handleBind}
-        disabled={!selectedUserId || !steamId.trim() || !previewData || isBinding}
-        className="w-full flex items-center justify-center gap-2 bg-neon-blue hover:bg-neon-blue/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
+      {/* Bind Form */}
+      <Form
+        method="post"
+        action={`/dashboard/group/${groupId}/edit`}
+        onSubmit={(e) => {
+          if (!selectedUserId || !steamId.trim() || !previewData) {
+            e.preventDefault();
+          }
+        }}
       >
-        <UserPlus className="w-4 h-4" />
-        {isBinding ? "Binding..." : "Bind Player"}
-      </button>
+        <input type="hidden" name="intent" value="bind" />
+        <input type="hidden" name="userId" value={selectedUserId} />
+        <input type="hidden" name="steamId" value={steamId} />
+        <button
+          type="submit"
+          disabled={!selectedUserId || !steamId.trim() || !previewData}
+          className="w-full flex items-center justify-center gap-2 bg-neon-blue hover:bg-neon-blue/80 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors"
+        >
+          <UserPlus className="w-4 h-4" />
+          Bind Player
+        </button>
+      </Form>
     </div>
   );
 };

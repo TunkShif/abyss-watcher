@@ -1,12 +1,15 @@
-import { data } from "react-router";
+import { data, redirect, useNavigate } from "react-router";
 import type { Route } from "./+types/route";
+import { useState } from "react";
 import { GroupService } from "~/lib/modules/group";
-import type { BoundUser } from "~/lib/modules/group/models";
 import { PlayerService } from "~/lib/modules/player";
 import { userContext } from "~/lib/modules/auth/context";
 import { UserService } from "~/lib/modules/user";
-import { v } from "valibot";
+import * as v from "valibot";
 import { ActionSchema } from "./schema";
+import { SlideOverPanel } from "~/components/slide-over-panel";
+import { MemberListTab } from "./member-list";
+import { BindFormTab } from "./bind-form";
 
 // Loader: loads group info, members, bound users for this group
 export async function loader({ params, context }: Route.LoaderArgs) {
@@ -79,8 +82,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       return { error: "Steam player not found", intent };
     }
 
+    // Create global binding (players_users) and group tracking (groups_users)
     await PlayerService.bind(parsed.userId, parsed.steamId);
-    return { success: true, intent };
+    await GroupService.bindPlayerToGroup(parsed.userId, groupId);
+    return redirect("/dashboard");
   }
 
   if (parsed.intent === "unbind") {
@@ -93,4 +98,56 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   return { error: "Unknown intent", intent };
+}
+
+export default function GroupEditRoute({ loaderData }: Route.ComponentProps) {
+  const { group, boundUsers, unboundMembers } = loaderData;
+  const [activeTab, setActiveTab] = useState<"members" | "bind">("members");
+  const navigate = useNavigate();
+
+  return (
+    <SlideOverPanel title={group.groupName} onClose={() => navigate("/dashboard")}>
+      {/* Tabs */}
+      <div className="flex border-b border-white/5">
+        <button
+          type="button"
+          onClick={() => setActiveTab("members")}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+            activeTab === "members"
+              ? "text-neon-blue border-b-2 border-neon-blue"
+              : "text-slate-500 hover:text-slate-300"
+          }`}
+        >
+          Members
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("bind")}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+            activeTab === "bind"
+              ? "text-neon-blue border-b-2 border-neon-blue"
+              : "text-slate-500 hover:text-slate-300"
+          }`}
+        >
+          Bind Player
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="p-6">
+        {activeTab === "members" ? (
+          <MemberListTab
+            boundUsers={boundUsers}
+            unboundMembers={unboundMembers}
+            groupId={group.groupId}
+          />
+        ) : (
+          <BindFormTab
+            unboundMembers={unboundMembers}
+            groupId={group.groupId}
+          />
+        )}
+      </div>
+    </SlideOverPanel>
+  );
 }
