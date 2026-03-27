@@ -147,10 +147,11 @@ export const BindSchema = v.object({
   steamId: v.pipe(v.string(), v.nonEmpty("Steam ID is required")),
 });
 
-// Unbind: just userId
+// Unbind: userId + groupId (removes user from this group's tracking context)
 export const UnbindSchema = v.object({
   intent: v.literal("unbind"),
   userId: v.pipe(v.string(), v.nonEmpty("User is required")),
+  groupId: v.pipe(v.string(), v.nonEmpty("Group is required")),
 });
 
 // Discriminated union for all intents
@@ -174,47 +175,42 @@ git commit -m "feat: add Valibot action schemas for group edit"
 ## Task 4: Add service methods (reuse or create new)
 
 **Files:**
-- Modify: `app/lib/modules/player/index.ts` — add `bind`, `unbind` methods
-- Modify: `app/lib/modules/group/index.ts` — add `listBoundUsersForGroup` method
+- Modify: `app/lib/modules/player/index.ts` — add `bind` method
+- Modify: `app/lib/modules/group/index.ts` — add `unbindPlayerFromGroup` and `listBoundUsersForGroup` methods
 
-- [ ] **Step 1: Add to PlayerService in player/index.ts**
+- [ ] **Step 1: Add `bind` to PlayerService in player/index.ts**
 
-Add these methods to the `PlayerService` interface and implementation:
+Add to the `PlayerService` interface:
 
 ```typescript
-export interface PlayerService {
-  // ... existing methods
-  bind(userId: string, playerId: string): Promise<void>;
-  unbind(userId: string): Promise<void>;
-}
+bind(userId: string, playerId: string): Promise<void>;
+```
 
-// Add to implementation:
+Add to implementation:
+
+```typescript
 async bind(userId: string, playerId: string) {
   await db
     .insert(playersUsers)
     .values({ userId, playerId })
     .onConflictDoNothing();
 },
-
-async unbind(userId: string) {
-  await db.delete(playersUsers).where(eq(playersUsers.userId, userId));
-},
 ```
 
-Note: `playersUsers` import is already used in this file. `eq` is already imported.
+Note: `playersUsers` import is already used in this file.
 
 - [ ] **Step 2: Add to GroupService in group/index.ts**
 
-Add `listBoundUsersForGroup` to the interface and implementation:
+Add `unbindPlayerFromGroup` and `listBoundUsersForGroup` to the interface and implementation:
 
 ```typescript
 export interface GroupService {
   // ... existing methods
   listBoundUsersForGroup(groupId: GroupId): Promise<BoundUser[]>;
+  unbindPlayerFromGroup(userId: UserId, groupId: GroupId): Promise<void>;
 }
 
 // Add to implementation:
-// Uses existing listMembers() to get group members, then joins with DB to find bound ones
 async listBoundUsersForGroup(groupId: GroupId): Promise<BoundUser[]> {
   const [members, boundRecords] = await Promise.all([
     this.listMembers(groupId),
@@ -230,7 +226,6 @@ async listBoundUsersForGroup(groupId: GroupId): Promise<BoundUser[]> {
   ]);
 
   const memberMap = new Map(members.map((m) => [m.user_id.toString(), m]));
-  const boundUserIds = new Set(boundRecords.map((r) => r.userId));
 
   // Fetch steam summaries for bound players
   const playerIds = boundRecords.map((r) => r.playerId);
@@ -250,15 +245,25 @@ async listBoundUsersForGroup(groupId: GroupId): Promise<BoundUser[]> {
     };
   });
 },
+
+async unbindPlayerFromGroup(userId: UserId, groupId: GroupId): Promise<void> {
+  // Remove user from group's tracking: delete from groups_users only.
+  // The global Steam binding in players_users is preserved so the user
+  // can still be tracked if added to another group.
+  await db.delete(groupsUsers).where(and(
+    eq(groupsUsers.userId, userId),
+    eq(groupsUsers.groupId, groupId),
+  ));
+},
 ```
 
 Note: The `playersUsers` and `groupsUsers` imports need to be added to the file. Add:
 ```typescript
 import { playersUsers, groupsUsers } from "~/lib/database/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 ```
 
-Also add `BoundUser` import from `~/lib/modules/group/models`.
+Also add `BoundUser` import from `~/lib/modules/group/models` and `UserId` from `~/lib/clients/onebot/models`.
 
 - [ ] **Step 3: Commit**
 
@@ -365,7 +370,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (parsed.intent === "unbind") {
-    await PlayerService.unbind(parsed.userId);
+    // Unbind removes the user from this group's tracking context (groups_users),
+    // NOT the global Steam binding (players_users). This way the user keeps
+    // their Steam binding but stops being tracked in this group.
+    // Use params.groupId (not parsed.groupId) for security — it's the URL source of truth.
+    await GroupService.unbindPlayerFromGroup(parsed.userId, groupId);
     return { success: true, intent };
   }
 
@@ -600,7 +609,7 @@ export const GroupEditPanel: FC<GroupEditPanelProps> = ({ onClose }) => {
       {/* Tab Content */}
       <div className="p-6">
         {activeTab === "members" ? (
-          <MemberListTab data={data} />
+          <MemberListTab data={data} groupId={data.group.groupId} />
         ) : (
           <BindFormTab data={data} />
         )}
@@ -698,9 +707,10 @@ type EditRouteData = Route.ComponentProps;
 
 interface MemberListTabProps {
   data: EditRouteData;
+  groupId: string;
 }
 
-export const MemberListTab: FC<MemberListTabProps> = ({ data }) => {
+export const MemberListTab: FC<MemberListTabProps> = ({ data, groupId }) => {
   const { boundUsers, unboundMembers } = data;
   const [confirmUnbind, setConfirmUnbind] = useState<{ userId: string; userName: string } | null>(null);
   const unbindFetcher = useFetcher();
@@ -712,7 +722,7 @@ export const MemberListTab: FC<MemberListTabProps> = ({ data }) => {
   const confirmUnbindAction = () => {
     if (!confirmUnbind) return;
     unbindFetcher.submit(
-      { intent: "unbind", userId: confirmUnbind.userId },
+      { intent: "unbind", userId: confirmUnbind.userId, groupId },
       { method: "post" },
     );
     setConfirmUnbind(null);
